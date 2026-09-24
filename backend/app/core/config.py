@@ -13,6 +13,11 @@ class Configuracoes(BaseSettings):
     test_database_url: str = "postgresql+psycopg://catalogo:catalogo@localhost:5432/catalogo_test"
     cors_origens: list[str] = ["http://localhost:5173"]
 
+    # Administrador criado pelo seed. Sem e-mail e senha definidos, o seed não cria o admin.
+    admin_nome: str = "Administrador"
+    admin_email: str | None = None
+    admin_senha: str | None = None
+
 
 @lru_cache
 def obter_configuracoes() -> Configuracoes:
