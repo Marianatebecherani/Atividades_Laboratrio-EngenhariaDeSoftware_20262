@@ -1,22 +1,45 @@
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
+from alembic import command
+from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session
 
 from app.core.config import obter_configuracoes
 from app.db.sessao import obter_sessao
 from app.main import app
 
-engine_teste = create_engine(obter_configuracoes().test_database_url, pool_pre_ping=True)
-SessaoTeste = sessionmaker(bind=engine_teste, autoflush=False, expire_on_commit=False)
+DIRETORIO_BACKEND = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture(scope="session")
+def engine_teste() -> Iterator[Engine]:
+    """Recria o esquema do banco de testes aplicando as migrações do zero."""
+    url = obter_configuracoes().test_database_url
+    config_alembic = Config(DIRETORIO_BACKEND / "alembic.ini")
+    config_alembic.set_main_option("sqlalchemy.url", url)
+    command.downgrade(config_alembic, "base")
+    command.upgrade(config_alembic, "head")
+
+    engine = create_engine(url, pool_pre_ping=True)
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture
-def sessao() -> Iterator[Session]:
-    with SessaoTeste() as sessao:
+def sessao(engine_teste: Engine) -> Iterator[Session]:
+    """Sessão isolada: tudo o que o teste gravar é desfeito ao final."""
+    with engine_teste.connect() as conexao:
+        transacao = conexao.begin()
+        sessao = Session(
+            bind=conexao, join_transaction_mode="create_savepoint", expire_on_commit=False
+        )
         yield sessao
+        sessao.close()
+        transacao.rollback()
 
 
 @pytest.fixture
