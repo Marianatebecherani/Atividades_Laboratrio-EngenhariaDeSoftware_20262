@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import CheckConstraint, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, ComDatas
+from app.db.base import COLLATION_PT_BR, Base, ComDatas
 from app.models.enums import TipoObra
 from app.models.obra_genero import obras_generos
 from app.models.tipos import enum_como_texto
@@ -38,7 +38,7 @@ class Obra(ComDatas, Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    titulo: Mapped[str] = mapped_column(String(200), index=True)
+    titulo: Mapped[str] = mapped_column(String(200, collation=COLLATION_PT_BR), index=True)
     tipo: Mapped[TipoObra] = mapped_column(enum_como_texto(TipoObra, "tipo_obra"), index=True)
     ano_lancamento: Mapped[int] = mapped_column(SmallInteger, index=True)
     sinopse: Mapped[str | None] = mapped_column(Text)
