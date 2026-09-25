@@ -9,8 +9,10 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
 from app.core.config import obter_configuracoes
+from app.core.seguranca import criar_token_acesso
 from app.db.sessao import obter_sessao
 from app.main import app
+from app.models import PapelUsuario, Usuario
 
 DIRETORIO_BACKEND = Path(__file__).resolve().parents[1]
 
@@ -48,3 +50,22 @@ def cliente(sessao: Session) -> Iterator[TestClient]:
     with TestClient(app) as cliente:
         yield cliente
     app.dependency_overrides.clear()
+
+
+def _cabecalho_para(sessao: Session, papel: PapelUsuario, email: str) -> dict[str, str]:
+    usuario = Usuario(nome=papel.value.title(), email=email, senha_hash="-", papel=papel)
+    sessao.add(usuario)
+    sessao.flush()
+    return {"Authorization": f"Bearer {criar_token_acesso(usuario.id)}"}
+
+
+@pytest.fixture
+def cabecalho_admin(sessao: Session) -> dict[str, str]:
+    """Cabeçalho de autenticação de um administrador (sem passar pelo login)."""
+    return _cabecalho_para(sessao, PapelUsuario.ADMIN, "admin@exemplo.com")
+
+
+@pytest.fixture
+def cabecalho_usuario(sessao: Session) -> dict[str, str]:
+    """Cabeçalho de autenticação de um usuário comum (sem passar pelo login)."""
+    return _cabecalho_para(sessao, PapelUsuario.USUARIO, "usuario@exemplo.com")
