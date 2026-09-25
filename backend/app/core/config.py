@@ -16,6 +16,11 @@ class Configuracoes(BaseSettings):
     test_database_url: str = "postgresql+psycopg://catalogo:catalogo@localhost:5432/catalogo_test"
     cors_origens: list[str] = ["http://localhost:5173"]
 
+    # Autenticação: o segredo é obrigatório e deve vir do ambiente (.env).
+    jwt_segredo: str
+    jwt_algoritmo: str = "HS256"
+    jwt_expiracao_minutos: int = 60
+
     # Administrador criado pelo seed. Sem e-mail e senha definidos, o seed não cria o admin.
     admin_nome: str = "Administrador"
     admin_email: str | None = None

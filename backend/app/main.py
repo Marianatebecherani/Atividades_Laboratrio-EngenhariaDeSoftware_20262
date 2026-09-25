@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.erros import registrar_tratadores
 from app.api.rotas import api_router
 from app.core.config import obter_configuracoes
 
@@ -16,4 +17,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+registrar_tratadores(app)
 app.include_router(api_router)
