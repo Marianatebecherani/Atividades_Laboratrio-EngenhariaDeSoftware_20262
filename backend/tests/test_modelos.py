@@ -62,6 +62,12 @@ def test_filme_sem_sinopse_e_aceito(sessao: Session) -> None:
     assert obra.id is not None
 
 
+def test_obra_sem_classificacao_indicativa_e_aceita(sessao: Session) -> None:
+    obra = criar_filme(sessao, classificacao_indicativa=None)
+
+    assert obra.id is not None
+
+
 def test_serie_com_temporadas_e_aceita(sessao: Session) -> None:
     obra = criar_filme(sessao, tipo=TipoObra.SERIE, duracao_minutos=None, temporadas=3)
 
