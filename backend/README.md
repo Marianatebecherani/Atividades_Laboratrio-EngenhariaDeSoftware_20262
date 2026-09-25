@@ -7,7 +7,7 @@ API REST do Catálogo Pessoal de Filmes e Séries: autenticação, catálogo de 
 - Python 3.12+ com FastAPI
 - SQLAlchemy 2 (ORM) e Alembic (migrações)
 - PostgreSQL (psycopg 3)
-- pwdlib com Argon2 (hash de senhas)
+- pwdlib com Argon2 (hash de senhas) e PyJWT (tokens de acesso)
 - uv (gerenciamento de dependências)
 - pytest e Ruff (testes, lint e formatação)
 
@@ -16,11 +16,14 @@ API REST do Catálogo Pessoal de Filmes e Séries: autenticação, catálogo de 
 ```text
 backend/
 ├── app/
-│   ├── api/        # rotas HTTP
-│   ├── core/       # configurações e segurança
-│   ├── db/         # conexão, sessão e seed do banco
-│   ├── models/     # modelos ORM (tabelas)
-│   └── main.py     # criação da aplicação FastAPI
+│   ├── api/           # rotas HTTP, dependências e tratamento de erros
+│   ├── core/          # configurações, segurança e erros de negócio
+│   ├── db/            # conexão, sessão e seed do banco
+│   ├── models/        # modelos ORM (tabelas)
+│   ├── repositories/  # acesso a dados (padrão Repository)
+│   ├── schemas/       # contratos de entrada e saída da API (Pydantic)
+│   ├── services/      # regras de negócio
+│   └── main.py        # criação da aplicação FastAPI
 ├── migrations/     # migrações do Alembic
 └── tests/          # testes automatizados
 ```
@@ -64,6 +67,8 @@ cp .env.example .env
 | `TEST_DATABASE_URL` | URL de conexão com o banco usado pelos testes. |
 | `CORS_ORIGENS` | Lista de origens autorizadas a chamar a API. |
 | `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA` | Dados do administrador criado pelo seed. Sem e-mail e senha, o admin não é criado. |
+| `JWT_SEGREDO` | Obrigatório. Segredo usado para assinar os tokens. Gere com `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"`. |
+| `JWT_EXPIRACAO_MINUTOS` | Validade do token de acesso (padrão: 60). |
 | `SEED_DIRETORIO` | Opcional. Diretório com o `filmes.csv` e a pasta `posters/` (padrão: `database/seed` na raiz do repositório). |
 
 ## Banco de dados
@@ -102,6 +107,23 @@ A API fica disponível em `http://localhost:8000`:
 
 - Documentação interativa (Swagger): `http://localhost:8000/docs`
 - Verificação de saúde: `GET /api/v1/saude`
+
+## Endpoints
+
+Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos, fica no Swagger (`/docs`).
+
+| Método | Rota | Autenticação | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/saude` | — | Verifica se a API e o banco estão disponíveis. |
+| `POST` | `/auth/cadastro` | — | Cadastra um usuário comum (nome, e-mail e senha com no mínimo 8 caracteres). |
+| `POST` | `/auth/login` | — | Formulário OAuth2 (`username` = e-mail, `password`); retorna um token JWT válido por 60 minutos. |
+| `GET` | `/usuarios/me` | Token | Dados do usuário autenticado. |
+| `PATCH` | `/usuarios/me` | Token | Altera nome, e-mail ou senha. E-mail e senha exigem `senha_atual`. |
+| `DELETE` | `/usuarios/me` | Token | Exclui a conta, a lista e as avaliações do usuário. Exige a senha. O único administrador não pode excluir a própria conta. |
+
+Nas rotas autenticadas, envie o cabeçalho `Authorization: Bearer <token>`. No Swagger, use o botão **Authorize** e informe o e-mail e a senha.
+
+Erros seguem o formato `{"detail": "mensagem"}`: `401` para token ou credenciais inválidos, `403` para senha incorreta ou falta de permissão, `404` para recurso inexistente, `409` para conflitos (como e-mail já cadastrado) e `422` para dados inválidos.
 
 ## Testes e qualidade
 
