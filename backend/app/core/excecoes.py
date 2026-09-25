@@ -27,3 +27,15 @@ class CredenciaisInvalidas(ErroDeNegocio):
 
 class OperacaoNaoPermitida(ErroDeNegocio):
     pass
+
+
+class DadosInvalidos(ErroDeNegocio):
+    pass
+
+
+class ArquivoMuitoGrande(ErroDeNegocio):
+    pass
+
+
+class TipoDeArquivoNaoSuportado(ErroDeNegocio):
+    pass
