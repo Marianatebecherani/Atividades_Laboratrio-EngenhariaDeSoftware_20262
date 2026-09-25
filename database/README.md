@@ -11,7 +11,7 @@ O diretório [seed/](seed/) contém os filmes carregados pelo seed do backend:
 
 | Arquivo | Conteúdo |
 | --- | --- |
-| `seed/filmes.csv` | 100 filmes: título, ano, duração, classificação indicativa e sinopse. |
+| `seed/filmes.csv` | 100 filmes: título, ano, duração, classificação indicativa, gêneros e sinopse. |
 | `seed/posters/` | Pôster de cada filme, nomeado pelo índice do CSV (`filme_001.png` a `filme_100.png`). |
 
 ### Formato do `filmes.csv`
@@ -25,8 +25,8 @@ Arquivo UTF-8, com colunas separadas por ponto e vírgula (`;`). Textos que cont
 | `ano` | Ano de lançamento (a partir de 1888). |
 | `duracao_min` | Duração em minutos. |
 | `classificacao` | `Livre`, `10`, `12`, `14`, `16`, `18` ou `Not Rated` (sem classificação). |
+| `genero` | Gêneros do filme separados por vírgula, por exemplo `Policial, Drama`. Os gêneros são criados a partir desta coluna; escreva cada nome sempre da mesma forma. |
 | `sinopse` | Sinopse (opcional). |
-| `generos` | Opcional. Nomes separados por `\|`, por exemplo `Drama\|Crime`. Gêneros inexistentes são criados. |
 
 Os pôsteres podem estar em PNG, JPEG (`.jpg`) ou WebP, com até 2 MB cada.
 
@@ -38,10 +38,12 @@ A partir de `backend/`, com as migrações aplicadas:
 uv run python -m app.db.seed
 ```
 
-O seed pode ser executado mais de uma vez: filmes com título já cadastrado são mantidos sem alteração. Para recarregar tudo do zero, recrie o esquema antes (isso apaga todos os dados do banco):
+O seed pode ser executado mais de uma vez: filmes com título já cadastrado são mantidos sem alteração, inclusive seus gêneros. Para aplicar mudanças do CSV em filmes já cadastrados, recrie o banco do zero. **Isso apaga todos os dados do banco da aplicação e do banco de testes.** A partir da raiz do repositório:
 
 ```bash
-uv run alembic downgrade base
+docker compose -f infra/docker-compose.yml down -v
+docker compose -f infra/docker-compose.yml up -d --wait
+cd backend
 uv run alembic upgrade head
 uv run python -m app.db.seed
 ```
