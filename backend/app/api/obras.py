@@ -2,11 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 
-from app.api.dependencias import AdminDep, SessaoDep
+from app.api.conversores import obra_para_resposta
+from app.api.dependencias import AdminDep, SessaoDep, UsuarioOpcionalDep
+from app.models import StatusLista
 from app.models.poster import TAMANHO_MAXIMO_BYTES
-from app.repositories.obra_repository import ObraComResumo
-from app.schemas.genero import GeneroResposta
 from app.schemas.obra import FiltrosObras, ObraEntrada, ObraResposta, PaginaObras
+from app.services.lista_service import ListaService
 from app.services.obra_service import ObraService
 
 router = APIRouter(prefix="/obras", tags=["Obras"])
@@ -25,43 +26,54 @@ RESPOSTAS_ADMIN = {
 RESPOSTA_404 = {404: {"description": "Obra não encontrada"}}
 
 
-def para_resposta(resultado: ObraComResumo) -> ObraResposta:
-    obra = resultado.obra
-    url_poster = None
-    if obra.poster is not None:
-        # O parâmetro de versão muda quando o pôster é trocado, invalidando o cache do navegador.
-        versao = int(obra.poster.atualizado_em.timestamp())
-        url_poster = f"/api/v1/obras/{obra.id}/poster?v={versao}"
-    return ObraResposta(
-        id=obra.id,
-        titulo=obra.titulo,
-        tipo=obra.tipo,
-        ano_lancamento=obra.ano_lancamento,
-        sinopse=obra.sinopse,
-        classificacao_indicativa=obra.classificacao_indicativa,
-        duracao_minutos=obra.duracao_minutos,
-        temporadas=obra.temporadas,
-        generos=[GeneroResposta.model_validate(genero) for genero in obra.generos],
-        media_notas=resultado.media_notas,
-        total_avaliacoes=resultado.total_avaliacoes,
-        url_poster=url_poster,
-    )
+def status_na_lista(
+    sessao: SessaoDep, usuario: UsuarioOpcionalDep, obra_ids: list[int]
+) -> dict[int, StatusLista]:
+    """Status das obras na lista do usuário autenticado; vazio para visitantes."""
+    if usuario is None or not obra_ids:
+        return {}
+    return ListaService(sessao).status_por_obra(usuario, obra_ids)
 
 
-@router.get("", summary="Busca obras com filtros, ordenação e paginação")
-def buscar_obras(filtros: Annotated[FiltrosObras, Query()], servico: ObraServiceDep) -> PaginaObras:
+DESCRICAO_MEU_STATUS = (
+    "Com um token válido, cada obra traz `meu_status` (status na lista do usuário). "
+    "Sem token, ou com token inválido, `meu_status` vem nulo."
+)
+
+
+@router.get(
+    "",
+    summary="Busca obras com filtros, ordenação e paginação",
+    description=DESCRICAO_MEU_STATUS,
+)
+def buscar_obras(
+    filtros: Annotated[FiltrosObras, Query()],
+    servico: ObraServiceDep,
+    sessao: SessaoDep,
+    usuario: UsuarioOpcionalDep,
+) -> PaginaObras:
     resultados, total = servico.buscar(filtros)
+    status_lista = status_na_lista(sessao, usuario, [resultado.obra.id for resultado in resultados])
     return PaginaObras(
-        itens=[para_resposta(resultado) for resultado in resultados],
+        itens=[obra_para_resposta(r, status_lista.get(r.obra.id)) for r in resultados],
         total=total,
         pagina=filtros.pagina,
         tamanho=filtros.tamanho,
     )
 
 
-@router.get("/{obra_id}", summary="Detalha uma obra", responses=RESPOSTA_404)
-def obter_obra(obra_id: int, servico: ObraServiceDep) -> ObraResposta:
-    return para_resposta(servico.obter(obra_id))
+@router.get(
+    "/{obra_id}",
+    summary="Detalha uma obra",
+    description=DESCRICAO_MEU_STATUS,
+    responses=RESPOSTA_404,
+)
+def obter_obra(
+    obra_id: int, servico: ObraServiceDep, sessao: SessaoDep, usuario: UsuarioOpcionalDep
+) -> ObraResposta:
+    resultado = servico.obter(obra_id)
+    status_lista = status_na_lista(sessao, usuario, [obra_id])
+    return obra_para_resposta(resultado, status_lista.get(obra_id))
 
 
 @router.post(
@@ -71,7 +83,7 @@ def obter_obra(obra_id: int, servico: ObraServiceDep) -> ObraResposta:
     responses={**RESPOSTAS_ADMIN, 422: {"description": "Dados inválidos ou gêneros inexistentes"}},
 )
 def criar_obra(dados: ObraEntrada, _: AdminDep, servico: ObraServiceDep) -> ObraResposta:
-    return para_resposta(servico.criar(dados))
+    return obra_para_resposta(servico.criar(dados))
 
 
 @router.put(
@@ -82,7 +94,7 @@ def criar_obra(dados: ObraEntrada, _: AdminDep, servico: ObraServiceDep) -> Obra
 def atualizar_obra(
     obra_id: int, dados: ObraEntrada, _: AdminDep, servico: ObraServiceDep
 ) -> ObraResposta:
-    return para_resposta(servico.atualizar(obra_id, dados))
+    return obra_para_resposta(servico.atualizar(obra_id, dados))
 
 
 @router.delete(
@@ -132,7 +144,7 @@ def enviar_poster(
 ) -> ObraResposta:
     # Lê um byte além do limite apenas para detectar arquivos grandes demais.
     conteudo = arquivo.file.read(TAMANHO_MAXIMO_BYTES + 1)
-    return para_resposta(servico.definir_poster(obra_id, conteudo))
+    return obra_para_resposta(servico.definir_poster(obra_id, conteudo))
 
 
 @router.delete(

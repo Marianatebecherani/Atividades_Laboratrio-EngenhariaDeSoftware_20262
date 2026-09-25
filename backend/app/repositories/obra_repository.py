@@ -38,7 +38,7 @@ class ObraRepository:
 
         pagina = self.sessao.execute(
             consulta.order_by(*self._ordenacao(filtros))
-            .offset((filtros.pagina - 1) * filtros.tamanho)
+            .offset(filtros.deslocamento)
             .limit(filtros.tamanho)
         )
         return [self._montar(linha) for linha in pagina], total
@@ -46,6 +46,10 @@ class ObraRepository:
     def obter_com_resumo(self, obra_id: int) -> ObraComResumo | None:
         linha = self.sessao.execute(self._consulta_com_resumo().where(Obra.id == obra_id)).first()
         return self._montar(linha) if linha else None
+
+    def obter_varias_com_resumo(self, obra_ids: list[int]) -> dict[int, ObraComResumo]:
+        linhas = self.sessao.execute(self._consulta_com_resumo().where(Obra.id.in_(obra_ids)))
+        return {resultado.obra.id: resultado for resultado in map(self._montar, linhas)}
 
     def obter_por_id(self, obra_id: int) -> Obra | None:
         return self.sessao.get(Obra, obra_id)
