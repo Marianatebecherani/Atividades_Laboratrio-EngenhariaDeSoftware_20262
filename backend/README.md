@@ -20,6 +20,7 @@ backend/
 │   ├── core/          # configurações, segurança e erros de negócio
 │   ├── db/            # conexão, sessão e seed do banco
 │   ├── models/        # modelos ORM (tabelas)
+│   ├── recomendacoes/ # estratégias de recomendação (padrão Strategy)
 │   ├── repositories/  # acesso a dados (padrão Repository)
 │   ├── schemas/       # contratos de entrada e saída da API (Pydantic)
 │   ├── services/      # regras de negócio
@@ -123,6 +124,7 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `GET` | `/usuarios/me/lista` | Token | Lista pessoal, paginada, com filtro opcional `status` (`quero_assistir`, `assistindo`, `assistido`). |
 | `PUT` | `/usuarios/me/lista/{obra_id}` | Token | Adiciona a obra à lista (`201`) ou altera o status (`200`). Corpo: `{"status": "..."}`. |
 | `DELETE` | `/usuarios/me/lista/{obra_id}` | Token | Remove a obra da lista. |
+| `GET` | `/usuarios/me/recomendacoes` | Token | Recomendações personalizadas. Parâmetros: `estrategia` e `limite` (1 a 50, padrão 10). Veja abaixo. |
 | `GET` | `/generos` | — | Lista os gêneros em ordem alfabética. |
 | `POST` | `/generos` | Admin | Cadastra um gênero (nome único, sem diferenciar maiúsculas). |
 | `PUT` | `/generos/{id}` | Admin | Renomeia um gênero. |
@@ -157,6 +159,21 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 Com um token válido, `GET /obras` e `GET /obras/{id}` trazem em cada obra o campo `meu_status`, com o status dela na lista do usuário. Sem token, ou com token inválido, a rota continua pública e `meu_status` vem nulo.
 
 A resposta tem o formato `{"itens": [...], "total": 100, "pagina": 1, "tamanho": 20}`.
+
+### Recomendações
+
+O motor de recomendações usa o padrão **Strategy**: cada critério é uma classe que implementa a interface `EstrategiaRecomendacao` (em `app/recomendacoes/`), e o serviço escolhe a estratégia pelo parâmetro `estrategia`.
+
+| Estratégia | Critério |
+| --- | --- |
+| `generos` (padrão) | Monta um perfil de gêneros do usuário: cada avaliação soma `nota − 3` aos gêneros da obra (notas baixas afastam o gênero), e cada obra assistida ou em andamento sem nota soma 1. Recomenda as obras com maior afinidade com esse perfil. |
+| `similares` | Parte das obras avaliadas com nota 4 ou 5 e recomenda as que mais compartilham gêneros com elas (índice de Jaccard). |
+| `populares` | Obras com maior média de notas; as ainda não avaliadas vêm depois, das mais recentes às mais antigas. Não depende do histórico. |
+
+- Obras que já estão na lista do usuário ou que ele já avaliou não são recomendadas.
+- Se a estratégia escolhida não tiver histórico suficiente, a resposta usa `populares`. O campo `estrategia` da resposta informa qual foi usada.
+- Cada item traz a `obra`, uma `pontuacao` de 0 a 1 e um `motivo` (ex.: "Porque você gosta de Suspense e Policial").
+- A resposta informa o tempo de cálculo em `tempo_ms`. O requisito é ficar abaixo de 800 ms, e um teste automatizado verifica isso com 1000 obras e 5000 avaliações.
 
 Nas rotas autenticadas, envie o cabeçalho `Authorization: Bearer <token>`. No Swagger, use o botão **Authorize** e informe o e-mail e a senha.
 
