@@ -20,25 +20,9 @@ from app.core.seguranca import gerar_hash_senha
 from app.db.sessao import SessaoLocal
 from app.models import Genero, Obra, PapelUsuario, Poster, TipoObra, Usuario
 
-# Gêneros sempre disponíveis (os mesmos do filtro do frontend).
-# Gêneros adicionais citados no CSV também são criados.
-GENEROS_BASE = (
-    "Ação",
-    "Animação",
-    "Aventura",
-    "Comédia",
-    "Crime",
-    "Drama",
-    "Fantasia",
-    "Ficção Científica",
-    "Mistério",
-    "Romance",
-    "Terror",
-)
-
 ARQUIVO_FILMES = "filmes.csv"
 PASTA_POSTERS = "posters"
-SEPARADOR_GENEROS = "|"
+SEPARADOR_GENEROS = ","
 TIPOS_MIME_POR_EXTENSAO = {".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp"}
 CLASSIFICACOES_TEXTUAIS = {"livre": 0, "not rated": None}
 
@@ -63,13 +47,18 @@ def converter_classificacao(valor: str) -> int | None:
 
 
 def ler_filmes(diretorio: Path) -> list[FilmeCsv]:
-    """Lê o filmes.csv (UTF-8, separado por ponto e vírgula). A coluna `generos` é opcional."""
+    """Lê o filmes.csv (UTF-8, separado por ponto e vírgula).
+
+    A coluna `genero` é opcional e lista os gêneros separados por vírgula.
+    """
     with (diretorio / ARQUIVO_FILMES).open(encoding="utf-8-sig", newline="") as arquivo:
         linhas = list(csv.DictReader(arquivo, delimiter=";"))
 
     filmes = []
     for linha in linhas:
-        generos = linha.get("generos") or ""
+        nomes_generos = (
+            nome.strip() for nome in (linha.get("genero") or "").split(SEPARADOR_GENEROS)
+        )
         filmes.append(
             FilmeCsv(
                 indice=int(linha["indice"]),
@@ -78,9 +67,8 @@ def ler_filmes(diretorio: Path) -> list[FilmeCsv]:
                 duracao_minutos=int(linha["duracao_min"]),
                 classificacao_indicativa=converter_classificacao(linha["classificacao"]),
                 sinopse=linha["sinopse"].strip() or None,
-                generos=tuple(
-                    nome.strip() for nome in generos.split(SEPARADOR_GENEROS) if nome.strip()
-                ),
+                # dict.fromkeys remove repetições mantendo a ordem original.
+                generos=tuple(dict.fromkeys(nome for nome in nomes_generos if nome)),
             )
         )
     return filmes
@@ -98,8 +86,7 @@ def ler_poster(diretorio: Path, indice: int) -> Poster | None:
 
 def semear_generos(sessao: Session, filmes: list[FilmeCsv]) -> dict[str, Genero]:
     existentes = {genero.nome: genero for genero in sessao.scalars(select(Genero))}
-    nomes = list(GENEROS_BASE) + [nome for filme in filmes for nome in filme.generos]
-    for nome in nomes:
+    for nome in (nome for filme in filmes for nome in filme.generos):
         if nome not in existentes:
             existentes[nome] = Genero(nome=nome)
             sessao.add(existentes[nome])
