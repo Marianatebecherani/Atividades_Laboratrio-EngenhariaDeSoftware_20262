@@ -1,6 +1,9 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DIRETORIO_RAIZ = Path(__file__).resolve().parents[3]
 
 
 class Configuracoes(BaseSettings):
@@ -17,6 +20,9 @@ class Configuracoes(BaseSettings):
     admin_nome: str = "Administrador"
     admin_email: str | None = None
     admin_senha: str | None = None
+
+    # Diretório com o filmes.csv e a pasta posters/ usados pelo seed.
+    seed_diretorio: Path = DIRETORIO_RAIZ / "database" / "seed"
 
 
 @lru_cache
