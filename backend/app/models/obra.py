@@ -42,7 +42,8 @@ class Obra(ComDatas, Base):
     tipo: Mapped[TipoObra] = mapped_column(enum_como_texto(TipoObra, "tipo_obra"), index=True)
     ano_lancamento: Mapped[int] = mapped_column(SmallInteger, index=True)
     sinopse: Mapped[str | None] = mapped_column(Text)
-    classificacao_indicativa: Mapped[int] = mapped_column(SmallInteger)
+    # Nulo quando a obra não possui classificação indicativa ("não classificada").
+    classificacao_indicativa: Mapped[int | None] = mapped_column(SmallInteger)
     duracao_minutos: Mapped[int | None] = mapped_column(SmallInteger)
     temporadas: Mapped[int | None] = mapped_column(SmallInteger)
 
