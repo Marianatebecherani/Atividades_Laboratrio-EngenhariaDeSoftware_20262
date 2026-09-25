@@ -30,7 +30,7 @@ backend/
 | Tabela | Conteúdo |
 | --- | --- |
 | `usuarios` | Usuários, com papel `admin` ou `usuario`. |
-| `obras` | Filmes e séries: título, tipo, ano de lançamento, sinopse (opcional), classificação indicativa, duração em minutos (filmes) ou temporadas (séries). |
+| `obras` | Filmes e séries: título, tipo, ano de lançamento, sinopse (opcional), classificação indicativa (opcional), duração em minutos (filmes) ou temporadas (séries). |
 | `generos` | Gêneros das obras. |
 | `obras_generos` | Associação N:N entre obras e gêneros. |
 | `posters` | Imagem do pôster de cada obra (JPEG, PNG ou WebP, até 2 MB). |
@@ -40,7 +40,7 @@ backend/
 Regras garantidas pelo banco:
 
 - Filmes exigem duração em minutos; séries exigem número de temporadas.
-- Classificação indicativa: 0 (livre), 10, 12, 14, 16 ou 18.
+- Classificação indicativa: 0 (livre), 10, 12, 14, 16 ou 18; vazia quando a obra não é classificada.
 - Excluir uma obra remove o pôster, os gêneros associados, os itens de lista e as avaliações dela.
 - Não é possível excluir um gênero associado a alguma obra.
 
@@ -64,6 +64,7 @@ cp .env.example .env
 | `TEST_DATABASE_URL` | URL de conexão com o banco usado pelos testes. |
 | `CORS_ORIGENS` | Lista de origens autorizadas a chamar a API. |
 | `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA` | Dados do administrador criado pelo seed. Sem e-mail e senha, o admin não é criado. |
+| `SEED_DIRETORIO` | Opcional. Diretório com o `filmes.csv` e a pasta `posters/` (padrão: `database/seed` na raiz do repositório). |
 
 ## Banco de dados
 
@@ -73,11 +74,11 @@ A partir de `backend/`:
 # Aplicar as migrações
 uv run alembic upgrade head
 
-# Popular com o administrador, os gêneros e as obras de exemplo
+# Popular com o administrador, os gêneros e os 100 filmes de exemplo (com pôsteres)
 uv run python -m app.db.seed
 ```
 
-O seed pode ser executado mais de uma vez: registros já existentes são mantidos.
+Os filmes e os pôsteres vêm de [database/seed/](../database/README.md), onde também está descrito o formato do CSV. O seed pode ser executado mais de uma vez: registros já existentes são mantidos.
 
 Ao alterar os modelos, gere uma nova migração e revise o arquivo criado em `migrations/versions/` antes de aplicá-lo:
 
