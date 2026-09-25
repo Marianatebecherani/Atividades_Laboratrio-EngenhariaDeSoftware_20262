@@ -120,6 +120,9 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `GET` | `/usuarios/me` | Token | Dados do usuário autenticado. |
 | `PATCH` | `/usuarios/me` | Token | Altera nome, e-mail ou senha. E-mail e senha exigem `senha_atual`. |
 | `DELETE` | `/usuarios/me` | Token | Exclui a conta, a lista e as avaliações do usuário. Exige a senha. O único administrador não pode excluir a própria conta. |
+| `GET` | `/usuarios/me/lista` | Token | Lista pessoal, paginada, com filtro opcional `status` (`quero_assistir`, `assistindo`, `assistido`). |
+| `PUT` | `/usuarios/me/lista/{obra_id}` | Token | Adiciona a obra à lista (`201`) ou altera o status (`200`). Corpo: `{"status": "..."}`. |
+| `DELETE` | `/usuarios/me/lista/{obra_id}` | Token | Remove a obra da lista. |
 | `GET` | `/generos` | — | Lista os gêneros em ordem alfabética. |
 | `POST` | `/generos` | Admin | Cadastra um gênero (nome único, sem diferenciar maiúsculas). |
 | `PUT` | `/generos/{id}` | Admin | Renomeia um gênero. |
@@ -129,6 +132,10 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `POST` | `/obras` | Admin | Cadastra uma obra (JSON). Filmes exigem `duracao_minutos`; séries, `temporadas`. |
 | `PUT` | `/obras/{id}` | Admin | Substitui todos os dados da obra. |
 | `DELETE` | `/obras/{id}` | Admin | Exclui a obra, com pôster, itens de lista e avaliações. |
+| `GET` | `/obras/{id}/avaliacoes` | — | Avaliações da obra, paginadas, mais recentes primeiro, com o nome do autor. |
+| `PUT` | `/obras/{id}/avaliacoes/me` | Token | Cria (`201`) ou edita (`200`) a avaliação do usuário: nota inteira de 1 a 5 e comentário opcional (até 2000 caracteres). |
+| `DELETE` | `/obras/{id}/avaliacoes/me` | Token | Remove a avaliação do usuário. |
+| `DELETE` | `/avaliacoes/{id}` | Admin | Remove qualquer avaliação (moderação). |
 | `GET` | `/obras/{id}/poster` | — | Imagem do pôster. |
 | `PUT` | `/obras/{id}/poster` | Admin | Envia ou substitui o pôster (`multipart/form-data`, campo `arquivo`; PNG, JPEG ou WebP até 2 MB). |
 | `DELETE` | `/obras/{id}/poster` | Admin | Remove o pôster. |
@@ -146,6 +153,8 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `ordenar_por` | `media` (padrão), `titulo` ou `ano_lancamento`. Obras sem avaliação ficam no fim. |
 | `direcao` | `asc` ou `desc`. Padrão: crescente para título, decrescente para os demais. |
 | `pagina`, `tamanho` | Paginação (padrão: página 1 com 20 itens; máximo de 100 por página). |
+
+Com um token válido, `GET /obras` e `GET /obras/{id}` trazem em cada obra o campo `meu_status`, com o status dela na lista do usuário. Sem token, ou com token inválido, a rota continua pública e `meu_status` vem nulo.
 
 A resposta tem o formato `{"itens": [...], "total": 100, "pagina": 1, "tamanho": 20}`.
 
