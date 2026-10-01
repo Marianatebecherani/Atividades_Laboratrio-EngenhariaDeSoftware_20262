@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-//import LoginModal from "../components/LoginModal";
-//import RegisterModal from "../components/RegisterModal";
+import LoginModal from "../components/LoginModal";
+import RegisterModal from "../components/RegisterModal";
 
 function LandingPage({
   onLogin
