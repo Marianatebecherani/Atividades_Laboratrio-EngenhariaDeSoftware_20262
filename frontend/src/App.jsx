@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import "./App.css";
 
-//import { movies } from "./data/movies";
+import { movies } from "./data/movies";
 
 import LandingPage from "./pages/LandingPage";
-//import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(false);
