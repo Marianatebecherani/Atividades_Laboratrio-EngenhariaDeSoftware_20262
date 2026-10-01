@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 
 import Inicio from "./Inicio";
 import Busca from "./Busca";
-//import MinhaLista from "./MinhaLista";
+import MinhaLista from "./MinhaLista";
 //import Filme from "./Filme";
 
 function Dashboard({
