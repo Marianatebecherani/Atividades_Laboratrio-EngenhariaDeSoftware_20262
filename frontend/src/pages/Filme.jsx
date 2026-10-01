@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-//import ReviewModal from "../components/ReviewModal";
+import ReviewModal from "../components/ReviewModal";
 
 function Filme({
   movie,
