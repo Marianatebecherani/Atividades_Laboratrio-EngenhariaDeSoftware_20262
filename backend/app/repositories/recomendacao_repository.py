@@ -24,19 +24,25 @@ class RecomendacaoRepository:
 
     def obras_do_historico(self, usuario_id: int) -> set[int]:
         """Obras que o usuário já tem na lista (qualquer status) ou já avaliou."""
-        na_lista = select(ItemLista.obra_id).where(ItemLista.usuario_id == usuario_id)
-        avaliadas = select(Avaliacao.obra_id).where(Avaliacao.usuario_id == usuario_id)
+        na_lista = select(ItemLista.obra_id).where(
+            ItemLista.usuario_id == usuario_id, ItemLista.obra_id.is_not(None)
+        )
+        avaliadas = select(Avaliacao.obra_id).where(
+            Avaliacao.usuario_id == usuario_id, Avaliacao.obra_id.is_not(None)
+        )
         return set(self.sessao.scalars(na_lista.union(avaliadas)))
 
     def notas_do_usuario(self, usuario_id: int) -> dict[int, int]:
         consulta = select(Avaliacao.obra_id, Avaliacao.nota).where(
-            Avaliacao.usuario_id == usuario_id
+            Avaliacao.usuario_id == usuario_id,
+            Avaliacao.obra_id.is_not(None),
         )
         return dict(self.sessao.execute(consulta).tuples().all())
 
     def obras_assistidas(self, usuario_id: int) -> set[int]:
         consulta = select(ItemLista.obra_id).where(
             ItemLista.usuario_id == usuario_id,
+            ItemLista.obra_id.is_not(None),
             ItemLista.status.in_([StatusLista.ASSISTIDO, StatusLista.ASSISTINDO]),
         )
         return set(self.sessao.scalars(consulta))

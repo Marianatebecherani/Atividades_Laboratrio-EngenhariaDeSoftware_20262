@@ -7,6 +7,7 @@ API REST do Catálogo Pessoal de Filmes e Séries: autenticação, catálogo de 
 - Python 3.12+ com FastAPI
 - SQLAlchemy 2 (ORM) e Alembic (migrações)
 - PostgreSQL (psycopg 3)
+- HTTPX para integração HTTP assíncrona com o TMDb
 - pwdlib com Argon2 (hash de senhas) e PyJWT (tokens de acesso)
 - uv (gerenciamento de dependências)
 - pytest e Ruff (testes, lint e formatação)
@@ -70,7 +71,10 @@ cp .env.example .env
 | `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA` | Dados do administrador criado pelo seed. Sem e-mail e senha, o admin não é criado. |
 | `JWT_SEGREDO` | Obrigatório. Segredo usado para assinar os tokens. Gere com `uv run python -c "import secrets; print(secrets.token_urlsafe(48))"`. |
 | `JWT_EXPIRACAO_MINUTOS` | Validade do token de acesso (padrão: 60). |
+| `TMDB_API_TOKEN` | Opcional. API Read Access Token usado pelo backend para consultar o TMDb. Não é enviado ao frontend. |
 | `SEED_DIRETORIO` | Opcional. Diretório com o `filmes.csv` e a pasta `posters/` (padrão: `database/seed` na raiz do repositório). |
+
+Para obter o token, entre/crie uma conta no [TMDb](https://www.themoviedb.org/), abra [Configurações da API](https://www.themoviedb.org/settings/api), registre uma aplicação e copie o **API Read Access Token**. Configure-o apenas no `backend/.env`, usando `backend/.env.example` como referência. O arquivo `.env` é ignorado pelo Git.
 
 ## Banco de dados
 
@@ -141,6 +145,55 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `GET` | `/obras/{id}/poster` | — | Imagem do pôster. |
 | `PUT` | `/obras/{id}/poster` | Admin | Envia ou substitui o pôster (`multipart/form-data`, campo `arquivo`; PNG, JPEG ou WebP até 2 MB). |
 | `DELETE` | `/obras/{id}/poster` | Admin | Remove o pôster. |
+| `GET` | `/filmes/buscar?query=Batman&page=1` | — | Pesquisa filmes no TMDb; retorna `tmdb_id`, título, sinopse, lançamento, nota, votos e URLs de imagens. |
+| `GET` | `/filmes/populares?page=1` | — | Filmes populares do TMDb. |
+| `GET` | `/filmes/top-rated?page=1` | — | Filmes mais bem avaliados no TMDb. |
+| `GET` | `/filmes/now-playing?page=1` | — | Filmes atualmente em cartaz. |
+| `GET` | `/filmes/upcoming?page=1` | — | Próximos lançamentos. |
+| `GET` | `/filmes/discover` | — | Descoberta filtrada; veja os filtros TMDb abaixo. |
+| `GET` | `/filmes/generos` | — | Gêneros oficiais de filmes do TMDb (cache local de 6 horas). `/generos` continua sendo o catálogo local. |
+| `GET` | `/filmes/{tmdb_id}` | — | Detalhes do filme, incluindo elenco, diretor e equipe principal. |
+| `GET` | `/usuarios/me/filmes?pagina=1&tamanho=20` | Token | Estado TMDb agregado do usuário: lista, nota pessoal e favoritos. |
+| `GET` | `/usuarios/me/filmes/{tmdb_id}` | Token | Estado pessoal TMDb: status, nota/comentário pessoais e favorito. |
+| `PUT` | `/usuarios/me/filmes/{tmdb_id}/lista` | Token | Cria/altera status pessoal (`quero_assistir`, `assistindo`, `assistido`). |
+| `DELETE` | `/usuarios/me/filmes/{tmdb_id}/lista` | Token | Remove o status/lista pessoal TMDb. |
+| `PUT` | `/usuarios/me/filmes/{tmdb_id}/avaliacao` | Token | Salva nota pessoal (1 a 5) e comentário, separados da nota TMDb. |
+| `DELETE` | `/usuarios/me/filmes/{tmdb_id}/avaliacao` | Token | Remove a avaliação pessoal TMDb. |
+| `POST` | `/filmes/{tmdb_id}/favoritar` | Token | Adiciona o filme aos favoritos do usuário. |
+| `DELETE` | `/filmes/{tmdb_id}/favoritar` | Token | Remove o favorito. |
+| `GET` | `/usuarios/me/favoritos?pagina=1&tamanho=20` | Token | Lista IDs TMDb favoritados pelo usuário. |
+
+### Integração TMDb
+
+O `TmdbService` centraliza todas as chamadas à API v3; o frontend só acessa o FastAPI. Busca e listagens são paginadas no TMDb (`page`, `total_pages`, `total_results`) e retornadas no formato local `pagina`, `total_paginas`, `total_resultados`, `resultados`. `language` controla o idioma da resposta; `idioma_original` continua sendo o idioma do filme.
+
+`GET /filmes/discover` aceita `genre_id` ou `genre_ids=28,12`, `genre_operator=AND|OR`, `year`, `release_date_from/to`, `min_rating`, `max_rating`, `language`, `sort_by` e `page`. Gêneros múltiplos usam vírgula para AND e `|` no parâmetro oficial `with_genres` para OR. A ordenação é allowlisted: `popularity.asc/desc`, `vote_average.asc/desc`, `primary_release_date.asc/desc` e `title.asc/desc`. A página TMDb tem 20 resultados; não há parâmetro de tamanho por página. Os nomes antigos `release_date_gte/lte` e `vote_average_gte` continuam aceitos para compatibilidade.
+
+`poster_url`, `backdrop_url` e URLs de perfis do elenco são montadas pelo serviço a partir dos caminhos de imagem do TMDb. Detalhes incluem créditos; gêneros são mantidos em cache em memória por seis horas. Metadados cinematográficos não são copiados para PostgreSQL. As tabelas de lista e avaliação podem referenciar uma obra local (`obra_id`) ou um filme externo (`tmdb_id`), nunca ambos; avaliações pessoais permanecem em `nota`, sem confusão com `nota_tmdb`. Favoritos guardam somente `usuario_id`, `tmdb_id` e data. Um TMDb ID pode aparecer para vários usuários, mas não se duplica na associação do mesmo usuário.
+
+Sem `TMDB_API_TOKEN`, as rotas externas respondem `503`; autenticação do provedor, limite de consultas, timeout e falhas de conexão/resposta são convertidos em mensagens seguras, sem detalhes internos.
+
+Com a API iniciada e `TMDB_API_TOKEN` configurado:
+
+```text
+GET http://localhost:8000/api/v1/filmes/buscar?query=Batman
+GET http://localhost:8000/api/v1/filmes/27205
+GET http://localhost:8000/api/v1/filmes/populares?page=1
+GET http://localhost:8000/api/v1/filmes/top-rated?page=1
+GET http://localhost:8000/api/v1/filmes/now-playing?page=1
+GET http://localhost:8000/api/v1/filmes/upcoming?page=1
+GET http://localhost:8000/api/v1/filmes/discover?genre_id=28&year=2025
+GET http://localhost:8000/api/v1/filmes/discover?genre_ids=28,12&genre_operator=OR&year=2024&min_rating=7&max_rating=10&sort_by=vote_average.desc&page=1
+GET http://localhost:8000/api/v1/filmes/generos
+```
+
+`GET /filmes/generos` retorna gêneros do TMDb; `GET /generos` continua retornando gêneros cadastrados localmente. Na busca Discover, `genre_id`, `year`, `release_date_gte`, `release_date_lte`, `vote_average_gte`, `language` e `page` são traduzidos para os nomes oficiais de parâmetros do TMDb. O serviço usa a rota oficial de créditos para elenco, diretor e equipe principal.
+
+A migration `7b2a4d9e6f13` adiciona `tmdb_id` às associações de lista/avaliação e a tabela `favoritos`, preservando as linhas ligadas ao catálogo local. O PostgreSQL armazena apenas estado do Filmstar (status, nota/comentário pessoais e favoritos); notas pessoais de 1 a 5 são separadas de `nota_tmdb`. IDs podem se repetir entre usuários, mas cada usuário só pode ter uma associação de cada tipo para um mesmo `tmdb_id`. O downgrade bloqueia a remoção se houver dados TMDb nessas tabelas. Aplique a migration com `uv run alembic upgrade head` antes de usar os endpoints autenticados.
+
+Este produto usa a API TMDb, mas não é endossado nem certificado pelo TMDb.
+
+> This product uses the TMDB API but is not endorsed or certified by TMDB.
 
 ### Parâmetros de `GET /obras`
 

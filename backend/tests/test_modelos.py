@@ -125,6 +125,26 @@ def test_obra_aparece_uma_unica_vez_na_lista_do_usuario(sessao: Session) -> None
         sessao.flush()
 
 
+def test_filme_tmdb_aparece_uma_unica_vez_na_lista_do_usuario(sessao: Session) -> None:
+    usuario = criar_usuario(sessao)
+    sessao.add(ItemLista(usuario_id=usuario.id, tmdb_id=27205, status=StatusLista.ASSISTINDO))
+    sessao.flush()
+    sessao.add(ItemLista(usuario_id=usuario.id, tmdb_id=27205, status=StatusLista.ASSISTIDO))
+
+    with pytest.raises(IntegrityError):
+        sessao.flush()
+
+
+def test_avaliacao_tmdb_aparece_uma_unica_vez_por_usuario(sessao: Session) -> None:
+    usuario = criar_usuario(sessao)
+    sessao.add(Avaliacao(usuario_id=usuario.id, tmdb_id=27205, nota=4))
+    sessao.flush()
+    sessao.add(Avaliacao(usuario_id=usuario.id, tmdb_id=27205, nota=5))
+
+    with pytest.raises(IntegrityError):
+        sessao.flush()
+
+
 def test_obra_pode_ter_varios_generos(sessao: Session) -> None:
     drama, crime = Genero(nome="Drama"), Genero(nome="Crime")
     obra = criar_filme(sessao, generos=[drama, crime])
