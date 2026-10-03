@@ -1,0 +1,48 @@
+# Variáveis de ambiente e segredos locais
+.env
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.template
+.secrets
+.secrets.*
+!.secrets.example
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Saídas geradas e caches; adapte conforme as ferramentas adotadas
+dist/
+build/
+coverage/
+.cache/
+
+# Arquivos locais do sistema operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python e uv (o uv.lock deve ser versionado)
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editores
+.vscode/
+.idea/
+
+# Arquivos locais do projeto que não devem ser versionados
+CLAUDE.md
+local/
