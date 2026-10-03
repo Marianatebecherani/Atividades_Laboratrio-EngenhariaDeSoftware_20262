@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import {
   avaliarFilmeTmdb,
@@ -21,6 +21,13 @@ const CATEGORIAS = [
   ["upcoming", "Em breve"],
 ];
 
+const TITULOS_CATEGORIA = {
+  populares: "Populares no TMDb",
+  "top-rated": "Mais bem avaliados no TMDb",
+  "now-playing": "Filmes em cartaz",
+  upcoming: "Próximos lançamentos",
+};
+
 function formatarData(valor) {
   if (!valor) return "Data de lançamento indisponível";
   return new Date(`${valor}T00:00:00`).toLocaleDateString("pt-BR");
@@ -30,9 +37,15 @@ function nota(valor) {
   return valor == null ? "Sem nota" : `⭐ ${valor.toFixed(1)}`;
 }
 
-function TmdbSearch({ token, compacto = false }) {
+function TmdbSearch({ token, compacto = false, categoria = "populares" }) {
+  const tituloId = useId();
+  const resultadosRef = useRef(null);
+  const paginaRef = useRef(1);
+  const totalPaginasRef = useRef(0);
+  const carregandoRef = useRef(false);
+  const rolarDepoisDeCarregarRef = useRef(false);
   const [query, setQuery] = useState("");
-  const [modo, setModo] = useState(compacto ? "populares" : "buscar");
+  const [modo, setModo] = useState(compacto ? categoria : "buscar");
   const [termoPesquisado, setTermoPesquisado] = useState("");
   const [resultados, setResultados] = useState([]);
   const [generos, setGeneros] = useState([]);
@@ -45,8 +58,6 @@ function TmdbSearch({ token, compacto = false }) {
   const [notaMaxima, setNotaMaxima] = useState("");
   const [idioma, setIdioma] = useState("pt-BR");
   const [ordenacao, setOrdenacao] = useState("popularity.desc");
-  const [pagina, setPagina] = useState(1);
-  const [totalPaginas, setTotalPaginas] = useState(0);
   const [detalhe, setDetalhe] = useState(null);
   const [estadoUsuario, setEstadoUsuario] = useState(null);
   const [notaPessoal, setNotaPessoal] = useState("");
@@ -75,12 +86,12 @@ function TmdbSearch({ token, compacto = false }) {
   useEffect(() => {
     if (!compacto) return undefined;
     let ativo = true;
-    listarFilmesTmdb("populares")
+    listarFilmesTmdb(categoria)
       .then((resposta) => {
         if (ativo) {
           setResultados(resposta.resultados);
-          setPagina(resposta.pagina);
-          setTotalPaginas(resposta.total_paginas);
+          paginaRef.current = resposta.pagina;
+          totalPaginasRef.current = resposta.total_paginas;
         }
       })
       .catch((error) => {
@@ -89,11 +100,22 @@ function TmdbSearch({ token, compacto = false }) {
     return () => {
       ativo = false;
     };
-  }, [compacto]);
+  }, [compacto, categoria]);
 
-  const carregarResultados = async (novoModo, numeroPagina = 1) => {
+  useEffect(() => {
+    if (!rolarDepoisDeCarregarRef.current) return;
+    rolarDepoisDeCarregarRef.current = false;
+    requestAnimationFrame(() => {
+      const faixa = resultadosRef.current;
+      faixa?.scrollBy({ left: faixa.clientWidth, behavior: "smooth" });
+    });
+  }, [resultados]);
+
+  const carregarResultados = async (novoModo, numeroPagina = 1, anexar = false) => {
     const termo = numeroPagina === 1 ? query.trim() : termoPesquisado;
     if (novoModo === "buscar" && !termo) return;
+    if (anexar && carregandoRef.current) return;
+    carregandoRef.current = true;
     setCarregando(true);
     setErro("");
     setDetalhe(null);
@@ -118,15 +140,35 @@ function TmdbSearch({ token, compacto = false }) {
       } else {
         resposta = await listarFilmesTmdb(novoModo, numeroPagina);
       }
-      setResultados(resposta.resultados);
-      setPagina(resposta.pagina);
-      setTotalPaginas(resposta.total_paginas);
+      paginaRef.current = resposta.pagina;
+      totalPaginasRef.current = resposta.total_paginas;
+      setResultados((atuais) => anexar ? [...atuais, ...resposta.resultados] : resposta.resultados);
     } catch (error) {
-      setResultados([]);
+      if (!anexar) setResultados([]);
       setErro(error.message);
     } finally {
+      carregandoRef.current = false;
       setCarregando(false);
     }
+  };
+
+  const moverResultados = (direcao) => {
+    const faixa = resultadosRef.current;
+    if (!faixa) return;
+
+    const chegouAoFinal = faixa.scrollLeft + faixa.clientWidth >= faixa.scrollWidth - 8;
+    if (
+      direcao > 0
+      && chegouAoFinal
+      && paginaRef.current < totalPaginasRef.current
+      && !carregandoRef.current
+    ) {
+      rolarDepoisDeCarregarRef.current = true;
+      carregarResultados(modo, paginaRef.current + 1, true);
+      return;
+    }
+
+    faixa.scrollBy({ left: direcao * faixa.clientWidth, behavior: "smooth" });
   };
 
   const selecionarModo = (novoModo) => {
@@ -135,7 +177,8 @@ function TmdbSearch({ token, compacto = false }) {
     setDetalhe(null);
     setTermoPesquisado("");
     setResultados([]);
-    setTotalPaginas(0);
+    paginaRef.current = 1;
+    totalPaginasRef.current = 0;
     if (novoModo !== "buscar" && novoModo !== "discover") {
       carregarResultados(novoModo);
     }
@@ -232,12 +275,12 @@ function TmdbSearch({ token, compacto = false }) {
   };
 
   return (
-    <section className="tmdb-search" aria-labelledby="tmdb-search-title">
+    <section className="tmdb-search" aria-labelledby={tituloId}>
       <div className="tmdb-search-heading">
         <div>
           {!compacto && <span className="eyebrow">Catálogo externo</span>}
-          <h2 id="tmdb-search-title">
-            {compacto ? "Populares no TMDb" : "Filmes do TMDb"}
+          <h2 id={tituloId}>
+            {compacto ? TITULOS_CATEGORIA[categoria] : "Filmes do TMDb"}
           </h2>
         </div>
         {detalhe && (
@@ -491,46 +534,52 @@ function TmdbSearch({ token, compacto = false }) {
 
       {!detalhe && resultados.length > 0 && (
         <>
-          <div className="tmdb-results" aria-busy={carregando}>
-            {resultados.map((filme) => (
+          <div className="tmdb-carousel">
+            {resultados.length > 5 && (
               <button
-                className="tmdb-result"
-                key={filme.tmdb_id}
-                onClick={() => abrirDetalhe(filme.tmdb_id)}
+                className="carousel-button carousel-button-previous"
                 type="button"
+                aria-label="Rolar filmes para a esquerda"
+                title="Anterior"
+                onClick={() => moverResultados(-1)}
               >
-                {filme.poster_url ? (
-                  <img src={filme.poster_url} alt={`Pôster de ${filme.titulo}`} loading="lazy" />
-                ) : (
-                  <span className="tmdb-no-poster">Sem pôster</span>
-                )}
-                <span className="tmdb-result-info">
-                  <strong>{filme.titulo}</strong>
-                  <span>{formatarData(filme.data_lancamento)} · {nota(filme.nota_tmdb)}</span>
-                  {filme.sinopse && <span>{filme.sinopse}</span>}
-                </span>
+                ‹
               </button>
-            ))}
+            )}
+            <div className={`tmdb-results${compacto ? " tmdb-results-compact" : ""}`} aria-busy={carregando} ref={resultadosRef}>
+              {resultados.map((filme) => (
+                <button
+                  className="tmdb-result"
+                  key={filme.tmdb_id}
+                  onClick={() => abrirDetalhe(filme.tmdb_id)}
+                  type="button"
+                  aria-label={`Ver ${filme.titulo}, ${nota(filme.nota_tmdb)}`}
+                >
+                  {filme.poster_url ? (
+                    <img src={filme.poster_url} alt={`Pôster de ${filme.titulo}`} loading="lazy" />
+                  ) : (
+                    <span className="tmdb-no-poster">Sem pôster</span>
+                  )}
+                  <span className="tmdb-result-info">
+                    <strong>{filme.titulo}</strong>
+                    <span>{formatarData(filme.data_lancamento)}</span>
+                  </span>
+                  <span className="tmdb-result-rating">{nota(filme.nota_tmdb)}</span>
+                </button>
+              ))}
+            </div>
+            {resultados.length > 5 && (
+              <button
+                className="carousel-button carousel-button-next"
+                type="button"
+                aria-label="Rolar filmes para a direita"
+                title="Próximo"
+                onClick={() => moverResultados(1)}
+              >
+                ›
+              </button>
+            )}
           </div>
-          {totalPaginas > 1 && (
-            <nav className="tmdb-pagination" aria-label="Paginação dos resultados TMDb">
-              <button
-                type="button"
-                disabled={pagina <= 1 || carregando}
-                onClick={() => carregarResultados(modo, pagina - 1)}
-              >
-                Anterior
-              </button>
-              <span>Página {pagina} de {totalPaginas}</span>
-              <button
-                type="button"
-                disabled={pagina >= totalPaginas || carregando}
-                onClick={() => carregarResultados(modo, pagina + 1)}
-              >
-                Próxima
-              </button>
-            </nav>
-          )}
         </>
       )}
 

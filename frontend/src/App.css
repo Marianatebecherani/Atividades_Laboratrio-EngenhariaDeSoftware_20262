@@ -1253,19 +1253,73 @@ button {
 
   overflow-x: auto;
 
+  scroll-snap-type: x mandatory;
+
   padding-bottom: 10px;
 
-  scrollbar-width: thin;
+  scrollbar-width: auto;
+  scrollbar-color: #767383 rgba(255, 255, 255, 0.08);
 }
 
-.movie-row::-webkit-scrollbar {
-  height: 5px;
+.movie-row::-webkit-scrollbar,
+.tmdb-results::-webkit-scrollbar {
+  height: 8px;
 }
 
-.movie-row::-webkit-scrollbar-thumb {
-  background: #3d3655;
+.movie-row::-webkit-scrollbar-track,
+.tmdb-results::-webkit-scrollbar-track {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
 
-  border-radius: 10px;
+.movie-row::-webkit-scrollbar-thumb,
+.tmdb-results::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: #767383;
+  background-clip: padding-box;
+}
+
+.movie-carousel,
+.tmdb-carousel {
+  position: relative;
+}
+
+.carousel-button {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: grid;
+  width: 38px;
+  height: 42px;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 7px;
+  background: rgba(13, 13, 24, 0.88);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.carousel-button-previous {
+  left: 6px;
+}
+
+.carousel-button-next {
+  right: 6px;
+}
+
+.carousel-button:hover {
+  border-color: #ec4899;
+  background: rgba(40, 30, 48, 0.95);
+}
+
+.carousel-button:focus-visible {
+  outline: 2px solid #f472b6;
+  outline-offset: 2px;
 }
 
 
@@ -1274,7 +1328,9 @@ button {
 ===================================================== */
 
 .movie-card-dashboard {
-  flex: 0 0 180px;
+  flex: 0 0 calc((100% - 64px) / 5);
+
+  scroll-snap-align: start;
 
   cursor: pointer;
 
@@ -1288,7 +1344,9 @@ button {
 }
 
 .movie-poster {
-  height: 265px;
+  width: 100%;
+
+  aspect-ratio: 2 / 3;
 
   position: relative;
 
@@ -1373,6 +1431,11 @@ button {
   object-fit: cover;
 }
 
+.movie-poster > img {
+  position: absolute;
+  inset: 0;
+}
+
 .poster-gradient {
   position: absolute;
 
@@ -1404,6 +1467,36 @@ button {
   font-size: 11px;
 
   z-index: 3;
+}
+
+.poster-caption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  padding: 30px 12px 12px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.88));
+}
+
+.poster-caption h3 {
+  display: -webkit-box;
+  margin: 0 0 4px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.poster-caption span {
+  display: block;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .movie-card-info {
@@ -2690,55 +2783,83 @@ button {
   }
 
   .tmdb-results {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    display: flex;
     gap: 12px;
     margin-top: 22px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: auto;
+    scrollbar-color: #767383 rgba(255, 255, 255, 0.08);
+  }
+
+  .tmdb-results-compact {
+    margin-top: 0;
   }
 
   .tmdb-result {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 14px;
+    position: relative;
+    display: block;
+    flex: 0 0 calc((100% - 48px) / 5);
+    aspect-ratio: 2 / 3;
     min-width: 0;
-    padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.035);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+    background: #171722;
     color: #fff;
     text-align: left;
     cursor: pointer;
+    scroll-snap-align: start;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .tmdb-result::after {
+    position: absolute;
+    inset: 35% 0 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    content: "";
+    pointer-events: none;
   }
 
   .tmdb-result:hover,
   .tmdb-result:focus-visible {
-    border-color: rgba(236, 72, 153, 0.65);
+    transform: translateY(-4px);
+    border-color: rgba(236, 72, 153, 0.8);
   }
 
   .tmdb-result img,
   .tmdb-no-poster {
-    width: 72px;
-    aspect-ratio: 2 / 3;
-    border-radius: 5px;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
     object-fit: cover;
   }
 
   .tmdb-no-poster {
     display: grid;
     place-items: center;
-    padding: 5px;
+    padding: 12px;
     background: rgba(255, 255, 255, 0.08);
     color: #aaa;
-    font-size: 11px;
+    font-size: 13px;
     text-align: center;
   }
 
   .tmdb-result-info {
     display: flex;
-    min-width: 0;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
     flex-direction: column;
-    gap: 6px;
-    overflow: hidden;
+    gap: 4px;
+    padding: 28px 10px 11px;
+    pointer-events: none;
   }
 
   .tmdb-result-info strong,
@@ -2747,21 +2868,31 @@ button {
     text-overflow: ellipsis;
   }
 
-  .tmdb-result-info span {
-    color: #b8b8c3;
-    font-size: 12px;
-    line-height: 1.45;
-  }
-
-  .tmdb-result-info span:last-child {
+  .tmdb-result-info strong {
     display: -webkit-box;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.25;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
   }
 
-  .tmdb-pagination {
-    justify-content: flex-end;
-    margin-top: 18px;
+  .tmdb-result-info span {
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .tmdb-result-rating {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 1;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 10px;
   }
 
   .tmdb-detail {
@@ -2804,15 +2935,14 @@ button {
   @media (max-width: 600px) {
     .tmdb-search-heading,
     .tmdb-search-form,
-    .tmdb-pagination {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
     .tmdb-detail-body {
       grid-template-columns: 90px minmax(0, 1fr);
       gap: 14px;
       padding: 15px;
+    }
+
+    .tmdb-result {
+      flex-basis: calc((100% - 12px) / 2);
     }
   }
 
@@ -2946,5 +3076,21 @@ button {
 
   .tmdb-primary-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .movie-section .movie-card-dashboard {
+    flex-basis: calc((100% - 32px) / 3);
+  }
+
+  .tmdb-result {
+    flex-basis: calc((100% - 24px) / 3);
+  }
+}
+
+@media (max-width: 600px) {
+  .movie-section .movie-card-dashboard {
+    flex-basis: calc((100% - 16px) / 2);
   }
 }

@@ -45,46 +45,6 @@ export function obterPerfil(token) {
   return requisicao("/usuarios/me", { token });
 }
 
-export function listarObras(token) {
-  return requisicao("/obras?pagina=1&tamanho=100&ordenar_por=media&direcao=desc", {
-    token,
-  });
-}
-
-export function listarGeneros(token) {
-  return requisicao("/generos", { token });
-}
-
-export function listarMinhaLista(token) {
-  return requisicao("/usuarios/me/lista?pagina=1&tamanho=100", { token });
-}
-
-export function obterRecomendacoes(token) {
-  return requisicao("/usuarios/me/recomendacoes?estrategia=generos&limite=20", {
-    token,
-  });
-}
-
-export function listarAvaliacoes(obraId, token) {
-  return requisicao(`/obras/${obraId}/avaliacoes?pagina=1&tamanho=100`, { token });
-}
-
-export function avaliarObra(obraId, nota, comentario, token) {
-  return requisicao(`/obras/${obraId}/avaliacoes/me`, {
-    method: "PUT",
-    token,
-    body: JSON.stringify({ nota, comentario }),
-  });
-}
-
-export function definirStatusLista(obraId, status, token) {
-  return requisicao(`/usuarios/me/lista/${obraId}`, {
-    method: "PUT",
-    token,
-    body: JSON.stringify({ status }),
-  });
-}
-
 export function buscarFilmesTmdb(query, page = 1) {
   const parametros = new URLSearchParams({ query, page: String(page) });
   return requisicao(`/filmes/buscar?${parametros}`);
@@ -152,26 +112,3 @@ export function listarFilmesUsuarioTmdb(token, page = 1) {
   return requisicao(`/usuarios/me/filmes?pagina=${page}&tamanho=8`, { token });
 }
 
-export function filmeDaApi(obra) {
-  return {
-    id: obra.id,
-    title: obra.titulo,
-    genres: obra.generos.map((genero) => genero.nome),
-    genre: obra.generos[0]?.nome || (obra.tipo === "serie" ? "Série" : "Filme"),
-    rating: obra.media_notas,
-    classification: obra.classificacao_indicativa,
-    emoji: "🎬",
-    type: obra.tipo,
-    sinopse: obra.sinopse,
-    posterUrl: obra.url_poster,
-    meuStatus: obra.meu_status,
-  };
-}
-
-export function avaliacaoDaApi(avaliacao) {
-  return {
-    usuario: avaliacao.usuario.nome,
-    nota: avaliacao.nota,
-    comentario: avaliacao.comentario,
-  };
-}

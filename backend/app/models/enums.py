@@ -6,11 +6,6 @@ class PapelUsuario(StrEnum):
     USUARIO = "usuario"
 
 
-class TipoObra(StrEnum):
-    FILME = "filme"
-    SERIE = "serie"
-
-
 class StatusLista(StrEnum):
     QUERO_ASSISTIR = "quero_assistir"
     ASSISTINDO = "assistindo"

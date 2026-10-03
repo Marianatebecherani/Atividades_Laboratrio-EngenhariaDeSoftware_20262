@@ -39,7 +39,7 @@ Aplicação para registrar filmes e séries assistidos, manter uma lista "Quero 
 | Local | Responsabilidade |
 | --- | --- |
 | [backend/](backend/README.md) | API REST, regras de negócio e acesso a dados. |
-| [film-star/](film-star/README.md) | Interface web em React. |
+| [frontend/](frontend/README.md) | Interface web em React. |
 
 ## Execução
 

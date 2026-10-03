@@ -12,9 +12,6 @@ CONVENCAO_DE_NOMES = {
     "pk": "pk_%(table_name)s",
 }
 
-# Ordenação alfabética em português (acentos junto das letras), via ICU do Postgres.
-COLLATION_PT_BR = "pt-BR-x-icu"
-
 
 class Base(DeclarativeBase):
     """Classe base de todos os modelos ORM."""

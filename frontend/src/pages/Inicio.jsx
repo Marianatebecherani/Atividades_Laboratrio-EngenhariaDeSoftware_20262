@@ -1,20 +1,8 @@
-import MovieRow from "../components/MovieRow";
 import TmdbSearch from "../components/TmdbSearch";
 
-function Inicio({
-  movies,
-  recommendations,
-  token,
-  onMovieClick
-}) {
-  const filmes = movies.filter((movie) => movie.type === "filme");
-  const series = movies.filter((movie) => movie.type === "serie");
-
+function Inicio({ token }) {
   return (
     <div className="home-content">
-
-      <TmdbSearch token={token} compacto />
-
       <section className="welcome-section">
 
         <div>
@@ -37,31 +25,9 @@ function Inicio({
         </div>
 
       </section>
-
-      <MovieRow
-        title="Recomendados para você"
-        movies={recommendations}
-        onMovieClick={onMovieClick}
-      />
-
-      <MovieRow
-        title="Mais bem avaliados"
-        movies={movies}
-        onMovieClick={onMovieClick}
-      />
-
-      <MovieRow
-        title="Filmes"
-        movies={filmes}
-        onMovieClick={onMovieClick}
-      />
-
-      <MovieRow
-        title="Séries"
-        movies={series}
-        onMovieClick={onMovieClick}
-      />
-
+      <TmdbSearch token={token} compacto />
+      <TmdbSearch token={token} compacto categoria="now-playing" />
+      <TmdbSearch token={token} compacto categoria="top-rated" />
     </div>
   );
 }

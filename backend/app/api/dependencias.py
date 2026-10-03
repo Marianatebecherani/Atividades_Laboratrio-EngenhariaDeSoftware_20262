@@ -56,17 +56,3 @@ def obter_filmes_usuario_service(sessao: SessaoDep) -> FilmesUsuarioService:
 
 
 FilmesUsuarioServiceDep = Annotated[FilmesUsuarioService, Depends(obter_filmes_usuario_service)]
-
-
-esquema_oauth2_opcional = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
-
-
-def obter_usuario_opcional(
-    token: Annotated[str | None, Depends(esquema_oauth2_opcional)], servico: UsuarioServiceDep
-) -> Usuario | None:
-    """Usuário autenticado nas rotas públicas. Token ausente ou inválido é tratado como anônimo."""
-    usuario_id = ler_usuario_do_token(token) if token else None
-    return servico.obter(usuario_id) if usuario_id is not None else None
-
-
-UsuarioOpcionalDep = Annotated[Usuario | None, Depends(obter_usuario_opcional)]
