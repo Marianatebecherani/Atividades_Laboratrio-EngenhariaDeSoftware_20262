@@ -4,8 +4,9 @@ import ReviewModal from "../components/ReviewModal";
 
 function Filme({
   movie,
-  onBack,
-  onLogout
+  onReview,
+  onSetStatus,
+  onBack
 }) {
 
   const [showReviewModal, setShowReviewModal] =
@@ -16,19 +17,30 @@ function Filme({
 
   const [reviewComment, setReviewComment] =
     useState("");
+  const [actionError, setActionError] = useState("");
 
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
+    setActionError("");
+    try {
+      await onReview(reviewRating, reviewComment);
+      setShowReviewModal(false);
+      setReviewRating(0);
+      setReviewComment("");
+    } catch (error) {
+      setActionError(error.message);
+    }
+  };
 
-    console.log({
-      movie: movie.title,
-      rating: reviewRating,
-      comment: reviewComment
-    });
-
-    setShowReviewModal(false);
-    setReviewRating(0);
-    setReviewComment("");
+  const handleStatusChange = async (event) => {
+    const status = event.target.value;
+    if (!status) return;
+    setActionError("");
+    try {
+      await onSetStatus(status);
+    } catch (error) {
+      setActionError(error.message);
+    }
   };
 
 
@@ -76,10 +88,11 @@ function Filme({
           <div className="movie-detail-main">
 
             <div className="detail-poster">
-
-              <span>
-                {movie.emoji}
-              </span>
+              {movie.posterUrl ? (
+                <img src={movie.posterUrl} alt={`Pôster de ${movie.title}`} />
+              ) : (
+                <span>{movie.emoji}</span>
+              )}
 
             </div>
 
@@ -91,7 +104,7 @@ function Filme({
               </h1>
 
               <div className="detail-rating">
-                ⭐ {movie.rating}
+                {movie.rating == null ? "Sem avaliações" : `⭐ ${movie.rating.toFixed(1)}`}
               </div>
 
               <div className="detail-genres">
@@ -111,6 +124,16 @@ function Filme({
                   "Sinopse não disponível."}
               </p>
 
+              <label className="list-status-control">
+                Minha lista
+                <select value={movie.meuStatus || ""} onChange={handleStatusChange}>
+                  <option value="">Adicionar à lista...</option>
+                  <option value="quero_assistir">Quero assistir</option>
+                  <option value="assistindo">Assistindo</option>
+                  <option value="assistido">Assistido</option>
+                </select>
+              </label>
+
             </div>
 
           </div>
@@ -122,6 +145,12 @@ function Filme({
               Avaliações
             </h2>
 
+
+            {movie.carregandoAvaliacoes && <p>Carregando avaliações...</p>}
+
+            {!movie.carregandoAvaliacoes && movie.avaliacoes?.length === 0 && (
+              <p>Esta obra ainda não tem avaliações.</p>
+            )}
 
             {movie.avaliacoes?.map(
               (review, index) => (
@@ -158,6 +187,8 @@ function Filme({
               Avaliar filme
             </button>
 
+            {actionError && <p className="form-error" role="alert">{actionError}</p>}
+
           </section>
 
         </section>
@@ -176,6 +207,7 @@ function Filme({
             onSubmit={
               handleSubmitReview
             }
+            disabled={reviewRating === 0}
           />
 
         )}

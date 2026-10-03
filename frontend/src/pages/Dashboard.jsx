@@ -1,4 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import {
+  avaliarObra,
+  avaliacaoDaApi,
+  definirStatusLista,
+  filmeDaApi,
+  listarAvaliacoes,
+  listarGeneros,
+  listarMinhaLista,
+  listarObras,
+  obterRecomendacoes,
+} from "../api";
 
 import Sidebar from "../components/Sidebar";
 
@@ -7,10 +19,39 @@ import Busca from "./Busca";
 import MinhaLista from "./MinhaLista";
 import Filme from "./Filme";
 
-function Dashboard({
-  movies,
-  onLogout
-}) {
+async function carregarDados(token) {
+  const [catalogo, generos, lista] = await Promise.all([
+    listarObras(token),
+    listarGeneros(token),
+    listarMinhaLista(token),
+  ]);
+
+  let recomendacoes = [];
+  try {
+    const resposta = await obterRecomendacoes(token);
+    recomendacoes = resposta.itens.map((item) => filmeDaApi(item.obra));
+  } catch {
+    recomendacoes = [];
+  }
+
+  return {
+    movies: catalogo.itens.map(filmeDaApi),
+    genres: generos.map((genero) => genero.nome),
+    myList: lista.itens.map((item) => ({
+      ...filmeDaApi(item.obra),
+      listStatus: item.status,
+    })),
+    recommendations: recomendacoes,
+  };
+}
+
+function Dashboard({ token, usuario, onLogout }) {
+  const [movies, setMovies] = useState([]);
+  const [genres, setGenres] = useState([]);
+  const [myList, setMyList] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const [menuOpen, setMenuOpen] =
     useState(true);
@@ -32,6 +73,30 @@ function Dashboard({
 
   const [selectedClassifications, setSelectedClassifications] =
     useState([]);
+
+  const aplicarDados = (dados) => {
+    setMovies(dados.movies);
+    setGenres(dados.genres);
+    setMyList(dados.myList);
+    setRecommendations(dados.recommendations);
+  };
+
+  useEffect(() => {
+    let ativo = true;
+    carregarDados(token)
+      .then((dados) => {
+        if (ativo) aplicarDados(dados);
+      })
+      .catch((error) => {
+        if (ativo) setLoadError(error.message);
+      })
+      .finally(() => {
+        if (ativo) setLoading(false);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [token]);
 
 
   const toggleGenre = (genre) => {
@@ -89,7 +154,60 @@ function Dashboard({
 
 
   const handleMovieClick = (movie) => {
-    setSelectedMovie(movie);
+    setSelectedMovie({ ...movie, avaliacoes: [], carregandoAvaliacoes: true });
+  };
+
+  const selectedMovieId = selectedMovie?.id;
+
+  useEffect(() => {
+    if (!selectedMovieId) return undefined;
+    let ativo = true;
+    listarAvaliacoes(selectedMovieId, token)
+      .then((resposta) => {
+        if (ativo) {
+          setSelectedMovie((atual) =>
+            atual?.id === selectedMovieId
+              ? {
+                  ...atual,
+                  avaliacoes: resposta.itens.map(avaliacaoDaApi),
+                  carregandoAvaliacoes: false,
+                }
+              : atual,
+          );
+        }
+      })
+      .catch(() => {
+        if (ativo) {
+          setSelectedMovie((atual) =>
+            atual?.id === selectedMovieId
+              ? { ...atual, carregandoAvaliacoes: false }
+              : atual,
+          );
+        }
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [selectedMovieId, token]);
+
+  const handleReview = async (nota, comentario) => {
+    await avaliarObra(selectedMovie.id, nota, comentario, token);
+    const [avaliacoes, dados] = await Promise.all([
+      listarAvaliacoes(selectedMovie.id, token),
+      carregarDados(token),
+    ]);
+    aplicarDados(dados);
+    setSelectedMovie((atual) => ({
+      ...atual,
+      avaliacoes: avaliacoes.itens.map(avaliacaoDaApi),
+      rating: dados.movies.find((movie) => movie.id === atual.id)?.rating ?? atual.rating,
+    }));
+  };
+
+  const handleListStatus = async (status) => {
+    await definirStatusLista(selectedMovie.id, status, token);
+    aplicarDados(await carregarDados(token));
+    setSelectedMovie((atual) => ({ ...atual, meuStatus: status }));
   };
 
 
@@ -98,10 +216,11 @@ function Dashboard({
     return (
       <Filme
         movie={selectedMovie}
+        onReview={handleReview}
+        onSetStatus={handleListStatus}
         onBack={() =>
           setSelectedMovie(null)
         }
-        onLogout={onLogout}
       />
     );
 
@@ -140,11 +259,11 @@ function Dashboard({
           <div className="dashboard-user">
 
             <div className="user-avatar">
-              U
+              {usuario?.nome?.[0]?.toUpperCase() || "U"}
             </div>
 
             <span>
-              Usuário
+              {usuario?.nome || "Usuário"}
             </span>
 
           </div>
@@ -152,10 +271,15 @@ function Dashboard({
         </header>
 
 
-        {activePage === "inicio" && (
+        {loadError && <div className="data-error" role="alert">{loadError}</div>}
+        {loading && <div className="data-loading">Carregando catálogo...</div>}
+
+        {!loading && !loadError && activePage === "inicio" && (
 
           <Inicio
             movies={movies}
+            recommendations={recommendations}
+            token={token}
             onMovieClick={
               handleMovieClick
             }
@@ -164,10 +288,12 @@ function Dashboard({
         )}
 
 
-        {activePage === "busca" && (
+        {!loading && !loadError && activePage === "busca" && (
 
           <Busca
             movies={movies}
+            genres={genres}
+            token={token}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             selectedGenres={
@@ -192,10 +318,11 @@ function Dashboard({
         )}
 
 
-        {activePage === "lista" && (
+        {!loading && !loadError && activePage === "lista" && (
 
           <MinhaLista
-            movies={movies}
+            movies={myList}
+            token={token}
             onMovieClick={
               handleMovieClick
             }

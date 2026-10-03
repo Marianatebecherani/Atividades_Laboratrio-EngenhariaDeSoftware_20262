@@ -5,6 +5,8 @@ function MovieRow({
   movies,
   onMovieClick
 }) {
+  if (!movies.length) return null;
+
   return (
     <section className="movie-section">
 

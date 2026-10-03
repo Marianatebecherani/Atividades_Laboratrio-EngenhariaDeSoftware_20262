@@ -3,17 +3,23 @@ function MovieCard({ movie, onClick }) {
     <div
       className="movie-card-dashboard"
       onClick={() => onClick(movie)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") onClick(movie);
+      }}
     >
       <div className="movie-poster">
-
-        <span className="movie-emoji">
-          {movie.emoji}
-        </span>
+        {movie.posterUrl ? (
+          <img src={movie.posterUrl} alt={`Pôster de ${movie.title}`} loading="lazy" />
+        ) : (
+          <span className="movie-emoji">{movie.emoji}</span>
+        )}
 
         <div className="poster-gradient"></div>
 
         <div className="poster-rating">
-          ⭐ {movie.rating}
+          {movie.rating == null ? "Sem nota" : `⭐ ${movie.rating.toFixed(1)}`}
         </div>
 
       </div>
@@ -25,7 +31,7 @@ function MovieCard({ movie, onClick }) {
         </h3>
 
         <span>
-          {movie.genre}
+          {movie.listStatus || movie.genre}
         </span>
 
       </div>

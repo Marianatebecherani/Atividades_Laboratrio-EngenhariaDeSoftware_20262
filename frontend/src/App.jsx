@@ -1,24 +1,59 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import "./App.css";
-
-import { movies } from "./data/movies";
+import { entrar, obterPerfil } from "./api";
 
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [token, setToken] = useState(() => localStorage.getItem("filmstar-token"));
+  const [usuario, setUsuario] = useState(null);
+  const [sessaoCarregada, setSessaoCarregada] = useState(!token);
 
-  const handleLogin = () => {
-    setLoggedIn(true);
+  useEffect(() => {
+    if (!token) return;
+
+    let ativo = true;
+    obterPerfil(token)
+      .then((perfil) => {
+        if (ativo) setUsuario(perfil);
+      })
+      .catch(() => {
+        localStorage.removeItem("filmstar-token");
+        if (ativo) {
+          setToken(null);
+          setUsuario(null);
+        }
+      })
+      .finally(() => {
+        if (ativo) setSessaoCarregada(true);
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, [token]);
+
+  const handleLogin = async (email, senha) => {
+    const resposta = await entrar(email, senha);
+    localStorage.setItem("filmstar-token", resposta.access_token);
+    setSessaoCarregada(false);
+    setToken(resposta.access_token);
   };
 
   const handleLogout = () => {
-    setLoggedIn(false);
+    localStorage.removeItem("filmstar-token");
+    setToken(null);
+    setUsuario(null);
+    setSessaoCarregada(true);
   };
 
-  if (!loggedIn) {
+  if (!sessaoCarregada) {
+    return <main className="app-loading">Conectando à sua conta...</main>;
+  }
+
+  if (!token) {
     return (
       <LandingPage
         onLogin={handleLogin}
@@ -28,7 +63,8 @@ function App() {
 
   return (
     <Dashboard
-      movies={movies}
+      token={token}
+      usuario={usuario}
       onLogout={handleLogout}
     />
   );

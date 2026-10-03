@@ -4,7 +4,8 @@ function ReviewModal({
   comment,
   setComment,
   onClose,
-  onSubmit
+  onSubmit,
+  disabled
 }) {
   return (
     <div
@@ -65,6 +66,7 @@ function ReviewModal({
         <button
           className="modal-button"
           onClick={onSubmit}
+          disabled={disabled}
         >
           Enviar avaliação
         </button>

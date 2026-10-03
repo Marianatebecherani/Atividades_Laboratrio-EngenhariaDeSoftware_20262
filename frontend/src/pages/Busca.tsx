@@ -1,7 +1,10 @@
 import MovieCard from "../components/MovieCard";
+import TmdbSearch from "../components/TmdbSearch";
 
 function Busca({
   movies,
+  genres,
+  token,
   searchTerm,
   setSearchTerm,
   selectedGenres,
@@ -12,20 +15,6 @@ function Busca({
   toggleClassification,
   onMovieClick
 }) {
-
-  const genres = [
-    "Ação",
-    "Aventura",
-    "Animação",
-    "Comédia",
-    "Crime",
-    "Drama",
-    "Fantasia",
-    "Ficção Científica",
-    "Mistério",
-    "Romance",
-    "Terror"
-  ];
 
   const filteredMovies = movies
     .filter((movie) => {
@@ -46,6 +35,7 @@ function Busca({
       const matchesRating =
         selectedRatings.length === 0 ||
         selectedRatings.some((range) => {
+          if (movie.rating == null) return false;
 
           if (range === "0-1") {
             return (
@@ -106,11 +96,13 @@ function Busca({
       );
     })
     .sort(
-      (a, b) => b.rating - a.rating
+      (a, b) => (b.rating ?? 0) - (a.rating ?? 0)
     );
 
   return (
     <section className="page-section search-page">
+
+      <TmdbSearch token={token} />
 
       <div className="page-heading">
 
@@ -203,6 +195,32 @@ function Busca({
                     </button>
                   ))}
                 </div>
+            </div>
+
+            <div className="filter-group">
+              <h3>Classificação indicativa</h3>
+              <div className="filter-options">
+                {[
+                  [0, "Livre"],
+                  [10, "10 anos"],
+                  [12, "12 anos"],
+                  [14, "14 anos"],
+                  [16, "16 anos"],
+                  [18, "18 anos"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    className={
+                      selectedClassifications.includes(value)
+                        ? "filter-button active"
+                        : "filter-button"
+                    }
+                    onClick={() => toggleClassification(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
         </div>
 

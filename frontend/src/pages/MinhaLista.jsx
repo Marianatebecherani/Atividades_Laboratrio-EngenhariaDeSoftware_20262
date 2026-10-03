@@ -1,14 +1,11 @@
 import MovieCard from "../components/MovieCard";
+import TmdbMinhaLista from "../components/TmdbMinhaLista";
 
 function MinhaLista({
   movies,
-  onMovieClick
+  onMovieClick,
+  token
 }) {
-
-  const filmesAvaliados =
-    movies.filter(
-      (movie) => movie.avaliado
-    );
 
   return (
     <section className="page-section">
@@ -24,16 +21,16 @@ function MinhaLista({
         </h1>
 
         <p>
-          Filmes que você já avaliou.
+          Obras salvas na sua lista pessoal.
         </p>
 
       </div>
 
-      {filmesAvaliados.length > 0 ? (
+      {movies.length > 0 ? (
 
         <div className="movie-grid">
 
-          {filmesAvaliados.map((movie) => (
+          {movies.map((movie) => (
 
             <MovieCard
               key={movie.id}
@@ -54,16 +51,18 @@ function MinhaLista({
           </span>
 
           <h2>
-            Sua lista está vazia
+            Sua lista local está vazia
           </h2>
 
           <p>
-            Você ainda não avaliou nenhum filme.
+            Você ainda não adicionou obras do catálogo local à sua lista.
           </p>
 
         </div>
 
       )}
+
+      <TmdbMinhaLista token={token} />
 
     </section>
   );

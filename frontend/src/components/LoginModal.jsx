@@ -1,13 +1,27 @@
+import { useState } from "react";
+
 function LoginModal({
   onClose,
   onLogin,
   onRegister
 }) {
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-
-    onLogin();
+    setErro("");
+    setEnviando(true);
+    try {
+      await onLogin(email, senha);
+      onClose();
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setEnviando(false);
+    }
   };
 
 
@@ -51,12 +65,14 @@ function LoginModal({
           <div className="input-group">
 
             <label>
-              Username
+              E-mail
             </label>
 
             <input
-              type="text"
-              placeholder="Digite seu username"
+              type="email"
+              placeholder="voce@exemplo.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
 
@@ -72,6 +88,8 @@ function LoginModal({
             <input
               type="password"
               placeholder="Digite sua senha"
+              value={senha}
+              onChange={(event) => setSenha(event.target.value)}
               required
             />
 
@@ -81,9 +99,12 @@ function LoginModal({
           <button
             type="submit"
             className="modal-button"
+            disabled={enviando}
           >
-            Entrar
+            {enviando ? "Entrando..." : "Entrar"}
           </button>
+
+          {erro && <p className="form-error" role="alert">{erro}</p>}
 
         </form>
 

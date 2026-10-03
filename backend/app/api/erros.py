@@ -7,6 +7,7 @@ from app.core.excecoes import (
     CredenciaisInvalidas,
     DadosInvalidos,
     ErroDeNegocio,
+    ErroTmdb,
     OperacaoNaoPermitida,
     RecursoNaoEncontrado,
     TipoDeArquivoNaoSuportado,
@@ -31,5 +32,13 @@ async def tratar_erro_de_negocio(_: Request, erro: ErroDeNegocio) -> JSONRespons
     return JSONResponse(status_code=codigo, content={"detail": erro.mensagem})
 
 
+async def tratar_erro_tmdb(_: Request, erro: ErroTmdb) -> JSONResponse:
+    return JSONResponse(
+        status_code=erro.codigo_http,
+        content={"detail": erro.mensagem},
+    )
+
+
 def registrar_tratadores(app: FastAPI) -> None:
     app.add_exception_handler(ErroDeNegocio, tratar_erro_de_negocio)
+    app.add_exception_handler(ErroTmdb, tratar_erro_tmdb)

@@ -176,7 +176,7 @@ function LandingPage({
         <RegisterModal
           onClose={closeModal}
           onLogin={onLogin}
-          onRegister={() =>
+          onSwitchToLogin={() =>
             setModal("login")
           }
         />

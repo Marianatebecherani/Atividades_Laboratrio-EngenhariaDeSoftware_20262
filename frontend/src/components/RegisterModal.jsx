@@ -1,12 +1,30 @@
+import { useState } from "react";
+import { cadastrar } from "../api";
+
 function RegisterModal({
   onClose,
-  onLogin
+  onLogin,
+  onSwitchToLogin
 }) {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-
-    onLogin();
+    setErro("");
+    setEnviando(true);
+    try {
+      await cadastrar(nome, email, senha);
+      await onLogin(email, senha);
+      onClose();
+    } catch (error) {
+      setErro(error.message);
+    } finally {
+      setEnviando(false);
+    }
   };
 
 
@@ -49,12 +67,32 @@ function RegisterModal({
           <div className="input-group">
 
             <label>
-              Username
+              Nome
             </label>
 
             <input
               type="text"
-              placeholder="Escolha seu username"
+              placeholder="Como podemos chamar você?"
+              value={nome}
+              onChange={(event) => setNome(event.target.value)}
+              maxLength={100}
+              required
+            />
+
+          </div>
+
+
+          <div className="input-group">
+
+            <label>
+              E-mail
+            </label>
+
+            <input
+              type="email"
+              placeholder="voce@exemplo.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
             />
 
@@ -69,24 +107,11 @@ function RegisterModal({
 
             <input
               type="password"
-              placeholder="Crie uma senha"
-              required
-            />
-
-          </div>
-
-
-          <div className="input-group">
-
-            <label>
-              Idade
-            </label>
-
-            <input
-              type="number"
-              placeholder="Digite sua idade"
-              min="1"
-              max="120"
+              placeholder="Crie uma senha com ao menos 8 caracteres"
+              value={senha}
+              onChange={(event) => setSenha(event.target.value)}
+              minLength={8}
+              maxLength={128}
               required
             />
 
@@ -96,9 +121,12 @@ function RegisterModal({
           <button
             type="submit"
             className="modal-button"
+            disabled={enviando}
           >
-            Criar conta
+            {enviando ? "Criando conta..." : "Criar conta"}
           </button>
+
+          {erro && <p className="form-error" role="alert">{erro}</p>}
 
         </form>
 
@@ -109,7 +137,7 @@ function RegisterModal({
 
           <button
             type="button"
-            onClick={onLogin}
+            onClick={onSwitchToLogin}
           >
             Entrar
           </button>
