@@ -13,6 +13,7 @@ import {
   obterFilmeTmdb,
   removerStatusFilmeTmdb,
 } from "../api";
+import ComentariosFilme from "./ComentariosFilme";
 
 const CATEGORIAS = [
   ["populares", "Populares"],
@@ -37,7 +38,7 @@ function nota(valor) {
   return valor == null ? "Sem nota" : `⭐ ${valor.toFixed(1)}`;
 }
 
-function TmdbSearch({ token, compacto = false, categoria = "populares" }) {
+function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" }) {
   const tituloId = useId();
   const resultadosRef = useRef(null);
   const paginaRef = useRef(1);
@@ -529,6 +530,7 @@ function TmdbSearch({ token, compacto = false, categoria = "populares" }) {
               {erroAcao && <p className="tmdb-error" role="alert">{erroAcao}</p>}
             </div>
           </div>
+          <ComentariosFilme tmdbId={detalhe.tmdb_id} token={token} usuarioAtual={usuario} />
         </article>
       )}
 

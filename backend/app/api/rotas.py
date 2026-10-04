@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api import (
     autenticacao,
     avaliacoes,
+    comentarios,
     filmes,
     saude,
     usuarios,
@@ -14,3 +15,4 @@ api_router.include_router(autenticacao.router)
 api_router.include_router(usuarios.router)
 api_router.include_router(filmes.router)
 api_router.include_router(avaliacoes.router)
+api_router.include_router(comentarios.router)
