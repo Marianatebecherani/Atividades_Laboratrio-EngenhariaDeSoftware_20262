@@ -87,6 +87,10 @@ Todas as rotas usam o prefixo `/api/v1`.
 | `GET` | `/usuarios/me/favoritos` | Token | Lista IDs TMDb favoritados. |
 | `POST`, `DELETE` | `/filmes/{tmdb_id}/favoritar` | Token | Adiciona ou remove favorito. |
 | `DELETE` | `/avaliacoes/{id}` | Admin | Modera uma avaliação pessoal. |
+| `GET` | `/filmes/{tmdb_id}/comentarios?pagina=1&tamanho=20` | — | Lista comentários públicos de um filme, mais recentes primeiro. |
+| `POST` | `/filmes/{tmdb_id}/comentarios` | Token | Cria um comentário público no filme (1 a 2000 caracteres). |
+| `PATCH` | `/comentarios/{id}` | Token (autor) | Edita o conteúdo de um comentário próprio. |
+| `DELETE` | `/comentarios/{id}` | Token (autor) | Remove (exclusão lógica) um comentário próprio. |
 
 Nas rotas autenticadas, envie `Authorization: Bearer <token>`. O endpoint `/filmes/discover` aceita gêneros, ano, intervalo de lançamento, nota, idioma, ordenação e página. Os resultados e imagens são obtidos do TMDb em tempo real; o token do provedor nunca é retornado pela API.
 

@@ -9,6 +9,7 @@ from app.models.tipos import enum_como_texto
 
 if TYPE_CHECKING:
     from app.models.avaliacao import Avaliacao
+    from app.models.comentario import Comentario
     from app.models.favorito import Favorito
     from app.models.item_lista import ItemLista
 
@@ -31,5 +32,8 @@ class Usuario(ComDatas, Base):
         back_populates="usuario", cascade="all, delete-orphan", passive_deletes=True
     )
     favoritos: Mapped[list["Favorito"]] = relationship(
+        back_populates="usuario", cascade="all, delete-orphan", passive_deletes=True
+    )
+    comentarios: Mapped[list["Comentario"]] = relationship(
         back_populates="usuario", cascade="all, delete-orphan", passive_deletes=True
     )
