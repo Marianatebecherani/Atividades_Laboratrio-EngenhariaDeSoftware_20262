@@ -25,8 +25,13 @@ class ComentarioService:
             tamanho=paginacao.tamanho,
         )
 
+    def obter_meu(self, usuario_id: int, tmdb_id: int) -> ComentarioResposta | None:
+        """Comentário próprio (se existir) para pré-preencher a UI de avaliação."""
+        comentario = self.repositorio.obter_por_usuario_e_filme(usuario_id, tmdb_id)
+        return ComentarioResposta.model_validate(comentario) if comentario else None
+
     def criar(self, usuario_id: int, tmdb_id: int, dados: ComentarioEntrada) -> ComentarioResposta:
-        comentario = self.repositorio.criar(usuario_id, tmdb_id, dados.conteudo)
+        comentario = self.repositorio.criar(usuario_id, tmdb_id, dados.conteudo, dados.nota)
         self.sessao.commit()
         self.sessao.refresh(comentario)
         return ComentarioResposta.model_validate(comentario)
@@ -43,7 +48,7 @@ class ComentarioService:
         self, usuario_id: int, comentario_id: int, dados: ComentarioEntrada
     ) -> ComentarioResposta:
         comentario = self._obter_proprio(usuario_id, comentario_id)
-        comentario = self.repositorio.atualizar(comentario, dados.conteudo)
+        comentario = self.repositorio.atualizar(comentario, dados.conteudo, dados.nota)
         self.sessao.commit()
         self.sessao.refresh(comentario)
         return ComentarioResposta.model_validate(comentario)

@@ -1,9 +1,9 @@
 import TmdbMinhaLista from "../components/TmdbMinhaLista";
 
-function MinhaLista({ token }) {
+function MinhaLista({ token, usuario }) {
   return (
     <section className="page-section">
-      <TmdbMinhaLista token={token} />
+      <TmdbMinhaLista token={token} usuario={usuario} />
     </section>
   );
 }

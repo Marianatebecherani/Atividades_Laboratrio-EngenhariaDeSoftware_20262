@@ -1,19 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 
 import {
-  avaliarFilmeTmdb,
   buscarFilmesTmdb,
-  definirStatusFilmeTmdb,
   descobrirFilmesTmdb,
-  desfavoritarFilmeTmdb,
-  favoritarFilmeTmdb,
   listarFilmesTmdb,
   listarGenerosTmdb,
-  obterEstadoFilmeTmdb,
-  obterFilmeTmdb,
-  removerStatusFilmeTmdb,
 } from "../api";
-import ComentariosFilme from "./ComentariosFilme";
+import FilmeDetalhe from "./FilmeDetalhe";
 
 const CATEGORIAS = [
   ["populares", "Populares"],
@@ -60,14 +53,8 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
   const [idioma, setIdioma] = useState("pt-BR");
   const [ordenacao, setOrdenacao] = useState("popularity.desc");
   const [detalhe, setDetalhe] = useState(null);
-  const [estadoUsuario, setEstadoUsuario] = useState(null);
-  const [notaPessoal, setNotaPessoal] = useState("");
-  const [comentarioPessoal, setComentarioPessoal] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [detalheCarregando, setDetalheCarregando] = useState(false);
-  const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
-  const [erroAcao, setErroAcao] = useState("");
 
   useEffect(() => {
     if (compacto) return undefined;
@@ -198,81 +185,9 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
     carregarResultados(modo);
   };
 
-  const abrirDetalhe = async (tmdbId) => {
-    setDetalheCarregando(true);
+  const abrirDetalhe = (tmdbId) => {
     setErro("");
-    setErroAcao("");
-    try {
-      const filme = await obterFilmeTmdb(tmdbId);
-      const estado = await obterEstadoFilmeTmdb(tmdbId, token).catch(() => null);
-      setDetalhe(filme);
-      setEstadoUsuario(estado);
-      setNotaPessoal(estado?.nota_pessoal == null ? "" : String(estado.nota_pessoal));
-      setComentarioPessoal(estado?.comentario || "");
-    } catch (error) {
-      setErro(error.message);
-    } finally {
-      setDetalheCarregando(false);
-    }
-  };
-
-  const atualizarEstadoUsuario = async () => {
-    setEstadoUsuario(await obterEstadoFilmeTmdb(detalhe.tmdb_id, token));
-  };
-
-  const alterarStatus = async (event) => {
-    const status = event.target.value;
-    setSalvando(true);
-    setErroAcao("");
-    try {
-      if (status) {
-        await definirStatusFilmeTmdb(detalhe.tmdb_id, status, token);
-      } else {
-        await removerStatusFilmeTmdb(detalhe.tmdb_id, token);
-      }
-      await atualizarEstadoUsuario();
-    } catch (error) {
-      setErroAcao(error.message);
-    } finally {
-      setSalvando(false);
-    }
-  };
-
-  const salvarAvaliacao = async (event) => {
-    event.preventDefault();
-    if (!notaPessoal) return;
-    setSalvando(true);
-    setErroAcao("");
-    try {
-      await avaliarFilmeTmdb(
-        detalhe.tmdb_id,
-        Number(notaPessoal),
-        comentarioPessoal,
-        token,
-      );
-      await atualizarEstadoUsuario();
-    } catch (error) {
-      setErroAcao(error.message);
-    } finally {
-      setSalvando(false);
-    }
-  };
-
-  const alternarFavorito = async () => {
-    setSalvando(true);
-    setErroAcao("");
-    try {
-      if (estadoUsuario?.favorito) {
-        await desfavoritarFilmeTmdb(detalhe.tmdb_id, token);
-      } else {
-        await favoritarFilmeTmdb(detalhe.tmdb_id, token);
-      }
-      await atualizarEstadoUsuario();
-    } catch (error) {
-      setErroAcao(error.message);
-    } finally {
-      setSalvando(false);
-    }
+    setDetalhe(tmdbId);
   };
 
   return (
@@ -441,98 +356,8 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
       )}
 
       {erro && <p className="tmdb-error" role="alert">{erro}</p>}
-      {detalheCarregando && <p role="status">Carregando detalhes...</p>}
 
-      {detalhe && (
-        <article className="tmdb-detail">
-          {detalhe.backdrop_url && (
-            <img
-              className="tmdb-detail-backdrop"
-              src={detalhe.backdrop_url}
-              alt=""
-            />
-          )}
-          <div className="tmdb-detail-body">
-            {detalhe.poster_url && (
-              <img
-                className="tmdb-detail-poster"
-                src={detalhe.poster_url}
-                alt={`Pôster de ${detalhe.titulo}`}
-              />
-            )}
-            <div>
-              <h3>{detalhe.titulo}</h3>
-              {detalhe.titulo_original !== detalhe.titulo && (
-                <p className="tmdb-original-title">{detalhe.titulo_original}</p>
-              )}
-              <p>{formatarData(detalhe.data_lancamento)} · {nota(detalhe.nota_tmdb)}</p>
-              <p>{detalhe.sinopse || "Sinopse não disponível."}</p>
-              {detalhe.diretor && <p><strong>Direção:</strong> {detalhe.diretor}</p>}
-              {detalhe.elenco?.length > 0 && (
-                <p>
-                  <strong>Elenco:</strong> {detalhe.elenco.map((pessoa) => pessoa.nome).join(", ")}
-                </p>
-              )}
-              {detalhe.equipe_principal?.length > 0 && (
-                <p>
-                  <strong>Equipe:</strong>{" "}
-                  {detalhe.equipe_principal
-                    .map((pessoa) => `${pessoa.nome} (${pessoa.funcao})`)
-                    .join(", ")}
-                </p>
-              )}
-              <div className="tmdb-user-actions">
-                <label>
-                  Minha lista
-                  <select
-                    value={estadoUsuario?.status || ""}
-                    onChange={alterarStatus}
-                    disabled={salvando}
-                  >
-                    <option value="">Não está na lista</option>
-                    <option value="quero_assistir">Quero assistir</option>
-                    <option value="assistindo">Assistindo</option>
-                    <option value="assistido">Assistido</option>
-                  </select>
-                </label>
-                <button type="button" onClick={alternarFavorito} disabled={salvando}>
-                  {estadoUsuario?.favorito ? "Remover dos favoritos" : "Favoritar"}
-                </button>
-                <form onSubmit={salvarAvaliacao}>
-                  <label>
-                    Minha nota
-                    <select
-                      value={notaPessoal}
-                      onChange={(event) => setNotaPessoal(event.target.value)}
-                    >
-                      <option value="">Sem nota</option>
-                      {[1, 2, 3, 4, 5].map((valor) => (
-                        <option key={valor} value={valor}>{valor} / 5</option>
-                      ))}
-                    </select>
-                  </label>
-                  <textarea
-                    value={comentarioPessoal}
-                    onChange={(event) => setComentarioPessoal(event.target.value)}
-                    placeholder="Comentário pessoal"
-                    maxLength={2000}
-                  />
-                  <button type="submit" disabled={salvando || !notaPessoal}>
-                    Salvar minha avaliação
-                  </button>
-                </form>
-                {estadoUsuario?.nota_pessoal != null && (
-                  <p>
-                    Minha nota: {estadoUsuario.nota_pessoal} / 5 · TMDb: {nota(detalhe.nota_tmdb)}
-                  </p>
-                )}
-              </div>
-              {erroAcao && <p className="tmdb-error" role="alert">{erroAcao}</p>}
-            </div>
-          </div>
-          <ComentariosFilme tmdbId={detalhe.tmdb_id} token={token} usuarioAtual={usuario} />
-        </article>
-      )}
+      {detalhe && <FilmeDetalhe tmdbId={detalhe} token={token} usuario={usuario} />}
 
       {!detalhe && resultados.length > 0 && (
         <>

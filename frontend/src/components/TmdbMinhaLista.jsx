@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { listarFilmesUsuarioTmdb, obterFilmeTmdb } from "../api";
+import FilmeDetalhe from "./FilmeDetalhe";
 
 const ROTULOS_STATUS = {
   quero_assistir: "Quero assistir",
@@ -8,15 +9,16 @@ const ROTULOS_STATUS = {
   assistido: "Assistido",
 };
 
-function TmdbMinhaLista({ token }) {
+function TmdbMinhaLista({ token, usuario }) {
   const [itens, setItens] = useState([]);
   const [pagina, setPagina] = useState(1);
   const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
+  const [detalheAberto, setDetalheAberto] = useState(null);
   const tamanho = 8;
 
-  useEffect(() => {
+  const carregarLista = useCallback(() => {
     let ativo = true;
     listarFilmesUsuarioTmdb(token, pagina)
       .then(async (resposta) => {
@@ -46,6 +48,13 @@ function TmdbMinhaLista({ token }) {
     };
   }, [token, pagina]);
 
+  useEffect(() => carregarLista(), [carregarLista]);
+
+  const fecharDetalhe = () => {
+    setDetalheAberto(null);
+    carregarLista();
+  };
+
   if (carregando && itens.length === 0) {
     return <p className="data-loading">Carregando seus filmes TMDb...</p>;
   }
@@ -60,19 +69,25 @@ function TmdbMinhaLista({ token }) {
       <div className="tmdb-user-list-grid">
         {itens.map(({ estado, filme }) => (
           <article className="tmdb-user-list-item" key={estado.tmdb_id}>
-            {filme?.poster_url ? (
-              <img src={filme.poster_url} alt={`Pôster de ${filme.titulo}`} loading="lazy" />
-            ) : (
-              <span className="tmdb-no-poster">TMDb {estado.tmdb_id}</span>
-            )}
-            <div>
-              <h3>{filme?.titulo || `Filme TMDb ${estado.tmdb_id}`}</h3>
-              {estado.status && <p>{ROTULOS_STATUS[estado.status]}</p>}
-              {estado.favorito && <p>Favorito</p>}
-              {estado.nota_pessoal != null && <p>Sua nota: {estado.nota_pessoal} / 5</p>}
-              {filme?.nota_tmdb != null && <p>TMDb: {filme.nota_tmdb.toFixed(1)} / 10</p>}
-              {estado.comentario && <p>{estado.comentario}</p>}
-            </div>
+            <button
+              type="button"
+              className="tmdb-user-list-item-button"
+              onClick={() => setDetalheAberto(estado.tmdb_id)}
+            >
+              {filme?.poster_url ? (
+                <img src={filme.poster_url} alt={`Pôster de ${filme.titulo}`} loading="lazy" />
+              ) : (
+                <span className="tmdb-no-poster">TMDb {estado.tmdb_id}</span>
+              )}
+              <div>
+                <h3>{filme?.titulo || `Filme TMDb ${estado.tmdb_id}`}</h3>
+                {estado.status && <p>{ROTULOS_STATUS[estado.status]}</p>}
+                {estado.favorito && <p>Favorito</p>}
+                {estado.nota_pessoal != null && <p>Sua nota: {estado.nota_pessoal} / 5</p>}
+                {filme?.nota_tmdb != null && <p>TMDb: {filme.nota_tmdb.toFixed(1)} / 10</p>}
+                {estado.comentario && <p>{estado.comentario}</p>}
+              </div>
+            </button>
           </article>
         ))}
       </div>
@@ -100,6 +115,26 @@ function TmdbMinhaLista({ token }) {
             Próxima
           </button>
         </nav>
+      )}
+      {detalheAberto && (
+        <div
+          className="tmdb-detalhe-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={fecharDetalhe}
+        >
+          <div className="tmdb-detalhe-modal" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              className="tmdb-detalhe-modal-fechar"
+              onClick={fecharDetalhe}
+              aria-label="Fechar detalhes do filme"
+            >
+              ✕
+            </button>
+            <FilmeDetalhe tmdbId={detalheAberto} token={token} usuario={usuario} />
+          </div>
+        </div>
       )}
     </section>
   );

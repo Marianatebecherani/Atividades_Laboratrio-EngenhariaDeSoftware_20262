@@ -39,14 +39,44 @@ class ComentarioRepository:
             .where(Comentario.id == comentario_id, self._condicao_ativo())
         )
 
-    def criar(self, usuario_id: int, tmdb_id: int, conteudo: str) -> Comentario:
-        comentario = Comentario(usuario_id=usuario_id, tmdb_id=tmdb_id, conteudo=conteudo)
+    def obter_por_usuario_e_filme(self, usuario_id: int, tmdb_id: int) -> Comentario | None:
+        """Último comentário ativo do usuário nesse filme (usado pela UI de "minha avaliação")."""
+        condicao = (
+            (Comentario.usuario_id == usuario_id)
+            & (Comentario.tmdb_id == tmdb_id)
+            & self._condicao_ativo()
+        )
+        return self.sessao.scalar(
+            select(Comentario)
+            .options(joinedload(Comentario.usuario))
+            .where(condicao)
+            .order_by(Comentario.criado_em.desc(), Comentario.id.desc())
+        )
+
+    def listar_por_usuario(self, usuario_id: int) -> Sequence[Comentario]:
+        """Comentários ativos do usuário em todos os filmes (um por filme, o mais recente)."""
+        condicao = (Comentario.usuario_id == usuario_id) & self._condicao_ativo()
+        return self.sessao.scalars(
+            select(Comentario)
+            .where(condicao)
+            .order_by(Comentario.tmdb_id, Comentario.criado_em.desc(), Comentario.id.desc())
+        ).all()
+
+    def criar(
+        self, usuario_id: int, tmdb_id: int, conteudo: str, nota: int | None = None
+    ) -> Comentario:
+        comentario = Comentario(
+            usuario_id=usuario_id, tmdb_id=tmdb_id, conteudo=conteudo, nota=nota
+        )
         self.sessao.add(comentario)
         self.sessao.flush()
         return comentario
 
-    def atualizar(self, comentario: Comentario, conteudo: str) -> Comentario:
+    def atualizar(
+        self, comentario: Comentario, conteudo: str, nota: int | None = None
+    ) -> Comentario:
         comentario.conteudo = conteudo
+        comentario.nota = nota
         self.sessao.flush()
         return comentario
 

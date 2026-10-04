@@ -2754,22 +2754,38 @@ button {
   }
 
   .tmdb-user-list-item {
-    display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 14px;
     min-width: 0;
-    padding: 10px;
+    overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.035);
   }
 
-  .tmdb-user-list-item > img,
-  .tmdb-user-list-item > .tmdb-no-poster {
+  .tmdb-user-list-item img,
+  .tmdb-user-list-item .tmdb-no-poster {
     width: 72px;
     aspect-ratio: 2 / 3;
     border-radius: 5px;
     object-fit: cover;
+  }
+
+  .tmdb-user-list-item-button {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .tmdb-user-list-item-button:hover,
+  .tmdb-user-list-item-button:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .tmdb-user-list-item h3 {
@@ -2780,6 +2796,46 @@ button {
     margin: 5px 0;
     color: #c4c4ce;
     font-size: 13px;
+  }
+
+  .tmdb-detalhe-modal-overlay {
+    display: grid;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.72);
+  }
+
+  .tmdb-detalhe-modal {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    background: #171722;
+  }
+
+  .tmdb-detalhe-modal .tmdb-detail {
+    margin-top: 0;
+    border: none;
+    border-radius: 10px;
+  }
+
+  .tmdb-detalhe-modal-fechar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    cursor: pointer;
   }
 
   .tmdb-results {
@@ -3167,6 +3223,11 @@ button {
   margin-bottom: 6px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
+}
+
+.comentarios-nota {
+  color: #ffd369;
+  font-weight: 600;
 }
 
 .comentarios-acoes {

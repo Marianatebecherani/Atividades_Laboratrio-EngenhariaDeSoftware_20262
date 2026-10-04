@@ -56,7 +56,7 @@ function Dashboard({ token, usuario, onLogout }) {
 
         {activePage === "inicio" && <Inicio token={token} usuario={usuario} />}
         {activePage === "busca" && <Busca token={token} usuario={usuario} />}
-        {activePage === "lista" && <MinhaLista token={token} />}
+        {activePage === "lista" && <MinhaLista token={token} usuario={usuario} />}
 
       </main>
 

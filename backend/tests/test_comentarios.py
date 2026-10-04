@@ -34,9 +34,59 @@ def test_criar_comentario_autenticado(
     corpo = resposta.json()
     assert corpo["tmdb_id"] == TMDB_ID
     assert corpo["conteudo"] == "Um dos melhores filmes de ficção científica."
+    assert corpo["nota"] is None
     assert corpo["usuario"]["nome"] == "Usuario"
     assert "email" not in corpo["usuario"]
     assert "senha_hash" not in corpo["usuario"]
+
+
+def test_criar_comentario_com_nota(cliente: TestClient, cabecalho_usuario: dict[str, str]) -> None:
+    resposta = cliente.post(
+        f"/api/v1/filmes/{TMDB_ID}/comentarios",
+        json={"conteudo": "Nota e comentário juntos", "nota": 5},
+        headers=cabecalho_usuario,
+    )
+
+    assert resposta.status_code == 201
+    assert resposta.json()["nota"] == 5
+
+
+def test_rejeita_nota_fora_do_intervalo(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    resposta = cliente.post(
+        f"/api/v1/filmes/{TMDB_ID}/comentarios",
+        json={"conteudo": "Nota inválida", "nota": 6},
+        headers=cabecalho_usuario,
+    )
+
+    assert resposta.status_code == 422
+
+
+def test_obtem_meu_comentario_apos_criar(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    sem_comentario = cliente.get(
+        f"/api/v1/filmes/{TMDB_ID}/comentarios/meu", headers=cabecalho_usuario
+    )
+    assert sem_comentario.status_code == 200
+    assert sem_comentario.json() is None
+
+    criado = cliente.post(
+        f"/api/v1/filmes/{TMDB_ID}/comentarios",
+        json={"conteudo": "Minha avaliação pública", "nota": 4},
+        headers=cabecalho_usuario,
+    ).json()
+
+    meu = cliente.get(f"/api/v1/filmes/{TMDB_ID}/comentarios/meu", headers=cabecalho_usuario)
+    assert meu.status_code == 200
+    assert meu.json()["id"] == criado["id"]
+    assert meu.json()["nota"] == 4
+
+
+def test_obter_meu_comentario_exige_autenticacao(cliente: TestClient) -> None:
+    resposta = cliente.get(f"/api/v1/filmes/{TMDB_ID}/comentarios/meu")
+    assert resposta.status_code == 401
 
 
 def test_impede_criacao_sem_autenticacao(cliente: TestClient) -> None:

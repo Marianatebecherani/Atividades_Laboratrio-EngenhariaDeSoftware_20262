@@ -116,19 +116,23 @@ export function listarComentariosFilme(tmdbId, page = 1, tamanho = 20) {
   return requisicao(`/filmes/${tmdbId}/comentarios?pagina=${page}&tamanho=${tamanho}`);
 }
 
-export function criarComentarioFilme(tmdbId, conteudo, token) {
+export function obterMeuComentarioFilme(tmdbId, token) {
+  return requisicao(`/filmes/${tmdbId}/comentarios/meu`, { token });
+}
+
+export function criarComentarioFilme(tmdbId, conteudo, nota, token) {
   return requisicao(`/filmes/${tmdbId}/comentarios`, {
     method: "POST",
     token,
-    body: JSON.stringify({ conteudo }),
+    body: JSON.stringify({ conteudo, nota: nota || null }),
   });
 }
 
-export function atualizarComentario(comentarioId, conteudo, token) {
+export function atualizarComentario(comentarioId, conteudo, nota, token) {
   return requisicao(`/comentarios/${comentarioId}`, {
     method: "PATCH",
     token,
-    body: JSON.stringify({ conteudo }),
+    body: JSON.stringify({ conteudo, nota: nota || null }),
   });
 }
 

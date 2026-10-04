@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
 
-import {
-  atualizarComentario,
-  criarComentarioFilme,
-  listarComentariosFilme,
-  removerComentario,
-} from "../api";
+import { atualizarComentario, listarComentariosFilme, removerComentario } from "../api";
 
 const TAMANHO_PAGINA = 20;
 
@@ -13,16 +8,27 @@ function formatarDataHora(valor) {
   return new Date(valor).toLocaleString("pt-BR");
 }
 
-function ComentariosFilme({ tmdbId, token, usuarioAtual }) {
+function nota(valor) {
+  return valor == null ? null : `⭐ ${valor} / 5`;
+}
+
+function ComentariosFilme({
+  tmdbId,
+  token,
+  usuarioAtual,
+  comentarioProprioId,
+  aoAlterarComentarioProprio,
+  atualizarSinal,
+}) {
   const [itens, setItens] = useState([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-  const [novoConteudo, setNovoConteudo] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [edicaoId, setEdicaoId] = useState(null);
   const [edicaoConteudo, setEdicaoConteudo] = useState("");
+  const [edicaoNota, setEdicaoNota] = useState("");
 
   const carregar = (numeroPagina = pagina) => {
     setCarregando(true);
@@ -40,32 +46,18 @@ function ComentariosFilme({ tmdbId, token, usuarioAtual }) {
   useEffect(() => {
     carregar(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tmdbId]);
-
-  const publicarComentario = async (event) => {
-    event.preventDefault();
-    if (!novoConteudo.trim()) return;
-    setEnviando(true);
-    setErro("");
-    try {
-      await criarComentarioFilme(tmdbId, novoConteudo, token);
-      setNovoConteudo("");
-      carregar(1);
-    } catch (error) {
-      setErro(error.message);
-    } finally {
-      setEnviando(false);
-    }
-  };
+  }, [tmdbId, atualizarSinal]);
 
   const iniciarEdicao = (comentario) => {
     setEdicaoId(comentario.id);
     setEdicaoConteudo(comentario.conteudo);
+    setEdicaoNota(comentario.nota == null ? "" : String(comentario.nota));
   };
 
   const cancelarEdicao = () => {
     setEdicaoId(null);
     setEdicaoConteudo("");
+    setEdicaoNota("");
   };
 
   const salvarEdicao = async (event) => {
@@ -74,9 +66,15 @@ function ComentariosFilme({ tmdbId, token, usuarioAtual }) {
     setEnviando(true);
     setErro("");
     try {
-      await atualizarComentario(edicaoId, edicaoConteudo, token);
+      const atualizado = await atualizarComentario(
+        edicaoId,
+        edicaoConteudo,
+        edicaoNota ? Number(edicaoNota) : null,
+        token,
+      );
       cancelarEdicao();
       carregar(pagina);
+      if (edicaoId === comentarioProprioId) aoAlterarComentarioProprio?.(atualizado);
     } catch (error) {
       setErro(error.message);
     } finally {
@@ -90,6 +88,7 @@ function ComentariosFilme({ tmdbId, token, usuarioAtual }) {
     try {
       await removerComentario(comentarioId, token);
       carregar(itens.length === 1 && pagina > 1 ? pagina - 1 : pagina);
+      if (comentarioId === comentarioProprioId) aoAlterarComentarioProprio?.(null);
     } catch (error) {
       setErro(error.message);
     } finally {
@@ -105,24 +104,11 @@ function ComentariosFilme({ tmdbId, token, usuarioAtual }) {
 
       {erro && <p className="tmdb-error" role="alert">{erro}</p>}
 
-      {token && (
-        <form className="comentarios-form" onSubmit={publicarComentario}>
-          <textarea
-            value={novoConteudo}
-            onChange={(event) => setNovoConteudo(event.target.value)}
-            placeholder="Escreva seu comentário..."
-            maxLength={2000}
-            disabled={enviando}
-          />
-          <button type="submit" disabled={enviando || !novoConteudo.trim()}>
-            Comentar
-          </button>
-        </form>
-      )}
-
       {carregando && <p role="status">Carregando comentários...</p>}
 
-      {!carregando && itens.length === 0 && <p>Ainda não há comentários nesta obra.</p>}
+      {!carregando && itens.length === 0 && (
+        <p>Ainda não há comentários nesta obra. Seja o primeiro a avaliar!</p>
+      )}
 
       <ul className="comentarios-lista">
         {itens.map((comentario) => {
@@ -132,11 +118,26 @@ function ComentariosFilme({ tmdbId, token, usuarioAtual }) {
             <li className="comentarios-item" key={comentario.id}>
               <div className="comentarios-cabecalho">
                 <strong>{comentario.usuario.nome}</strong>
+                {nota(comentario.nota) && (
+                  <span className="comentarios-nota">{nota(comentario.nota)}</span>
+                )}
                 <span>{formatarDataHora(comentario.criado_em)}</span>
               </div>
 
               {emEdicao ? (
                 <form className="comentarios-form" onSubmit={salvarEdicao}>
+                  <label>
+                    Nota
+                    <select
+                      value={edicaoNota}
+                      onChange={(event) => setEdicaoNota(event.target.value)}
+                    >
+                      <option value="">Sem nota</option>
+                      {[1, 2, 3, 4, 5].map((valor) => (
+                        <option key={valor} value={valor}>{valor} / 5</option>
+                      ))}
+                    </select>
+                  </label>
                   <textarea
                     value={edicaoConteudo}
                     onChange={(event) => setEdicaoConteudo(event.target.value)}
