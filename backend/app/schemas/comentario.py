@@ -2,13 +2,14 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.comentario import CONTEUDO_TAMANHO_MAXIMO
+from app.models.comentario import CONTEUDO_TAMANHO_MAXIMO, NOTA_MAXIMA, NOTA_MINIMA
 
 
 class ComentarioEntrada(BaseModel):
     """Corpo aceito ao criar ou editar um comentário. O autor nunca vem do cliente."""
 
     conteudo: str = Field(min_length=1, max_length=CONTEUDO_TAMANHO_MAXIMO)
+    nota: int | None = Field(default=None, ge=NOTA_MINIMA, le=NOTA_MAXIMA)
 
     @field_validator("conteudo")
     @classmethod
@@ -35,6 +36,7 @@ class ComentarioResposta(BaseModel):
     tmdb_id: int
     usuario: ComentarioAutorResposta
     conteudo: str
+    nota: int | None
     criado_em: datetime
     atualizado_em: datetime
 

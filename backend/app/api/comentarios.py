@@ -28,6 +28,20 @@ def listar_comentarios(
     return servico.listar(tmdb_id, paginacao)
 
 
+@router.get(
+    "/filmes/{tmdb_id}/comentarios/meu",
+    response_model=ComentarioResposta | None,
+    summary="Obtém o comentário próprio (se existir) de um filme TMDb",
+    responses=RESPOSTA_401,
+)
+def obter_meu_comentario(
+    tmdb_id: TmdbIdPath,
+    usuario: UsuarioAtualDep,
+    servico: ComentarioServiceDep,
+) -> ComentarioResposta | None:
+    return servico.obter_meu(usuario.id, tmdb_id)
+
+
 @router.post(
     "/filmes/{tmdb_id}/comentarios",
     response_model=ComentarioResposta,
