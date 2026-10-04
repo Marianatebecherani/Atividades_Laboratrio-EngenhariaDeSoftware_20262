@@ -112,3 +112,31 @@ export function listarFilmesUsuarioTmdb(token, page = 1) {
   return requisicao(`/usuarios/me/filmes?pagina=${page}&tamanho=8`, { token });
 }
 
+export function listarComentariosFilme(tmdbId, page = 1, tamanho = 20) {
+  return requisicao(`/filmes/${tmdbId}/comentarios?pagina=${page}&tamanho=${tamanho}`);
+}
+
+export function obterMeuComentarioFilme(tmdbId, token) {
+  return requisicao(`/filmes/${tmdbId}/comentarios/meu`, { token });
+}
+
+export function criarComentarioFilme(tmdbId, conteudo, nota, token) {
+  return requisicao(`/filmes/${tmdbId}/comentarios`, {
+    method: "POST",
+    token,
+    body: JSON.stringify({ conteudo, nota: nota || null }),
+  });
+}
+
+export function atualizarComentario(comentarioId, conteudo, nota, token) {
+  return requisicao(`/comentarios/${comentarioId}`, {
+    method: "PATCH",
+    token,
+    body: JSON.stringify({ conteudo, nota: nota || null }),
+  });
+}
+
+export function removerComentario(comentarioId, token) {
+  return requisicao(`/comentarios/${comentarioId}`, { method: "DELETE", token });
+}
+

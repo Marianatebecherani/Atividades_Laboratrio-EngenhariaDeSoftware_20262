@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.excecoes import RecursoNaoEncontrado
 from app.repositories.avaliacao_repository import AvaliacaoRepository
+from app.repositories.comentario_repository import ComentarioRepository
 from app.repositories.favorito_repository import FavoritoRepository
 from app.repositories.item_lista_repository import ItemListaRepository
 from app.schemas.item_lista import ItemListaEntrada
@@ -25,16 +26,27 @@ class FilmesUsuarioService:
         self.lista = ItemListaRepository(sessao)
         self.avaliacoes = AvaliacaoRepository(sessao)
         self.favoritos = FavoritoRepository(sessao)
+        self.comentarios = ComentarioRepository(sessao)
 
     def obter_estado(self, usuario_id: int, tmdb_id: int) -> EstadoFilmeTmdbResposta:
         item = self.lista.obter_por_tmdb_id(usuario_id, tmdb_id)
         avaliacao = self.avaliacoes.obter_tmdb(usuario_id, tmdb_id)
         favorito = self.favoritos.obter(usuario_id, tmdb_id)
+        # O comentário público (com nota) tornou-se a fonte principal da "minha nota";
+        # a avaliação privada permanece como retrocompatibilidade.
+        comentario = self.comentarios.obter_por_usuario_e_filme(usuario_id, tmdb_id)
+        nota_pessoal = comentario.nota if comentario and comentario.nota is not None else None
+        if nota_pessoal is None and avaliacao is not None:
+            nota_pessoal = avaliacao.nota
+        texto_comentario = comentario.conteudo if comentario else None
+        if texto_comentario is None and avaliacao is not None:
+            texto_comentario = avaliacao.comentario
         datas = [
             data
             for data in (
                 item.atualizado_em if item else None,
                 avaliacao.atualizado_em if avaliacao else None,
+                comentario.atualizado_em if comentario else None,
                 favorito.criado_em if favorito else None,
             )
             if data is not None
@@ -42,8 +54,8 @@ class FilmesUsuarioService:
         return EstadoFilmeTmdbResposta(
             tmdb_id=tmdb_id,
             status=item.status if item else None,
-            nota_pessoal=avaliacao.nota if avaliacao else None,
-            comentario=avaliacao.comentario if avaliacao else None,
+            nota_pessoal=nota_pessoal,
+            comentario=texto_comentario,
             favorito=favorito is not None,
             atualizado_em=max(datas) if datas else None,
         )
@@ -67,6 +79,21 @@ class FilmesUsuarioService:
             estado.comentario = avaliacao.comentario
             if estado.atualizado_em is None or avaliacao.atualizado_em > estado.atualizado_em:
                 estado.atualizado_em = avaliacao.atualizado_em
+        # Um comentário por filme (o mais recente), na ordem já retornada pelo repositório.
+        tmdb_ids_com_comentario: set[int] = set()
+        for comentario in self.comentarios.listar_por_usuario(usuario_id):
+            if comentario.tmdb_id in tmdb_ids_com_comentario:
+                continue
+            tmdb_ids_com_comentario.add(comentario.tmdb_id)
+            estado = estados.setdefault(
+                comentario.tmdb_id,
+                EstadoFilmeTmdbResposta(tmdb_id=comentario.tmdb_id),
+            )
+            if comentario.nota is not None:
+                estado.nota_pessoal = comentario.nota
+            estado.comentario = comentario.conteudo
+            if estado.atualizado_em is None or comentario.atualizado_em > estado.atualizado_em:
+                estado.atualizado_em = comentario.atualizado_em
         for favorito in self.favoritos.listar_todos(usuario_id):
             estado = estados.setdefault(
                 favorito.tmdb_id,

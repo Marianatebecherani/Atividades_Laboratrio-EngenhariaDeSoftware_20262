@@ -1,6 +1,6 @@
 import TmdbSearch from "../components/TmdbSearch";
 
-function Inicio({ token }) {
+function Inicio({ token, usuario }) {
   return (
     <div className="home-content">
       <section className="welcome-section">
@@ -25,9 +25,9 @@ function Inicio({ token }) {
         </div>
 
       </section>
-      <TmdbSearch token={token} compacto />
-      <TmdbSearch token={token} compacto categoria="now-playing" />
-      <TmdbSearch token={token} compacto categoria="top-rated" />
+      <TmdbSearch token={token} usuario={usuario} compacto />
+      <TmdbSearch token={token} usuario={usuario} compacto categoria="now-playing" />
+      <TmdbSearch token={token} usuario={usuario} compacto categoria="top-rated" />
     </div>
   );
 }
