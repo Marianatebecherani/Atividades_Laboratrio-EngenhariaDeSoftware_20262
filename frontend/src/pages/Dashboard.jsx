@@ -54,9 +54,9 @@ function Dashboard({ token, usuario, onLogout }) {
         </header>
 
 
-        {activePage === "inicio" && <Inicio token={token} />}
-        {activePage === "busca" && <Busca token={token} />}
-        {activePage === "lista" && <MinhaLista token={token} />}
+        {activePage === "inicio" && <Inicio token={token} usuario={usuario} />}
+        {activePage === "busca" && <Busca token={token} usuario={usuario} />}
+        {activePage === "lista" && <MinhaLista token={token} usuario={usuario} />}
 
       </main>
 
