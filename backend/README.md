@@ -132,6 +132,10 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `POST` | `/obras` | Admin | Cadastra uma obra (JSON). Filmes exigem `duracao_minutos`; séries, `temporadas`. |
 | `PUT` | `/obras/{id}` | Admin | Substitui todos os dados da obra. |
 | `DELETE` | `/obras/{id}` | Admin | Exclui a obra, com pôster, itens de lista e avaliações. |
+| `GET` | `/obras/{id}/avaliacoes` | — | Avaliações da obra, paginadas, mais recentes primeiro, com o nome do autor. |
+| `PUT` | `/obras/{id}/avaliacoes/me` | Token | Cria (`201`) ou edita (`200`) a avaliação do usuário: nota inteira de 1 a 5 e comentário opcional (até 2000 caracteres). |
+| `DELETE` | `/obras/{id}/avaliacoes/me` | Token | Remove a avaliação do usuário. |
+| `DELETE` | `/avaliacoes/{id}` | Admin | Remove qualquer avaliação (moderação). |
 | `GET` | `/obras/{id}/poster` | — | Imagem do pôster. |
 | `PUT` | `/obras/{id}/poster` | Admin | Envia ou substitui o pôster (`multipart/form-data`, campo `arquivo`; PNG, JPEG ou WebP até 2 MB). |
 | `DELETE` | `/obras/{id}/poster` | Admin | Remove o pôster. |
