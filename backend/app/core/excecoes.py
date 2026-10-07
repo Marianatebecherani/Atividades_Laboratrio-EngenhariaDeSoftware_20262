@@ -39,3 +39,12 @@ class ArquivoMuitoGrande(ErroDeNegocio):
 
 class TipoDeArquivoNaoSuportado(ErroDeNegocio):
     pass
+
+
+class ErroTmdb(Exception):
+    """Falha segura ao consultar o provedor TMDb, pronta para resposta HTTP."""
+
+    def __init__(self, codigo_http: int, mensagem: str) -> None:
+        super().__init__(mensagem)
+        self.codigo_http = codigo_http
+        self.mensagem = mensagem
