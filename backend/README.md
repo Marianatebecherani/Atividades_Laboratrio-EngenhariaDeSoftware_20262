@@ -7,6 +7,7 @@ API REST do Catálogo Pessoal de Filmes e Séries: autenticação, catálogo de 
 - Python 3.12+ com FastAPI
 - SQLAlchemy 2 (ORM) e Alembic (migrações)
 - PostgreSQL (psycopg 3)
+- pwdlib com Argon2 (hash de senhas)
 - uv (gerenciamento de dependências)
 - pytest e Ruff (testes, lint e formatação)
 
@@ -16,11 +17,32 @@ API REST do Catálogo Pessoal de Filmes e Séries: autenticação, catálogo de 
 backend/
 ├── app/
 │   ├── api/        # rotas HTTP
-│   ├── core/       # configurações
-│   ├── db/         # conexão e sessão do banco
+│   ├── core/       # configurações e segurança
+│   ├── db/         # conexão, sessão e seed do banco
+│   ├── models/     # modelos ORM (tabelas)
 │   └── main.py     # criação da aplicação FastAPI
+├── migrations/     # migrações do Alembic
 └── tests/          # testes automatizados
 ```
+
+## Modelo de dados
+
+| Tabela | Conteúdo |
+| --- | --- |
+| `usuarios` | Usuários, com papel `admin` ou `usuario`. |
+| `obras` | Filmes e séries: título, tipo, ano de lançamento, sinopse (opcional), classificação indicativa (opcional), duração em minutos (filmes) ou temporadas (séries). |
+| `generos` | Gêneros das obras. |
+| `obras_generos` | Associação N:N entre obras e gêneros. |
+| `posters` | Imagem do pôster de cada obra (JPEG, PNG ou WebP, até 2 MB). |
+| `itens_lista` | Lista pessoal do usuário, com status `quero_assistir`, `assistindo` ou `assistido`. |
+| `avaliacoes` | Nota de 1 a 5 e comentário opcional; uma avaliação por usuário e obra. |
+
+Regras garantidas pelo banco:
+
+- Filmes exigem duração em minutos; séries exigem número de temporadas.
+- Classificação indicativa: 0 (livre), 10, 12, 14, 16 ou 18; vazia quando a obra não é classificada.
+- Excluir uma obra remove o pôster, os gêneros associados, os itens de lista e as avaliações dela.
+- Não é possível excluir um gênero associado a alguma obra.
 
 ## Pré-requisitos
 
@@ -41,6 +63,28 @@ cp .env.example .env
 | `DATABASE_URL` | URL de conexão com o banco da aplicação. |
 | `TEST_DATABASE_URL` | URL de conexão com o banco usado pelos testes. |
 | `CORS_ORIGENS` | Lista de origens autorizadas a chamar a API. |
+| `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA` | Dados do administrador criado pelo seed. Sem e-mail e senha, o admin não é criado. |
+| `SEED_DIRETORIO` | Opcional. Diretório com o `filmes.csv` e a pasta `posters/` (padrão: `database/seed` na raiz do repositório). |
+
+## Banco de dados
+
+A partir de `backend/`:
+
+```bash
+# Aplicar as migrações
+uv run alembic upgrade head
+
+# Popular com o administrador, os gêneros e os 100 filmes de exemplo (com pôsteres)
+uv run python -m app.db.seed
+```
+
+Os filmes e os pôsteres vêm de [database/seed/](../database/README.md), onde também está descrito o formato do CSV. O seed pode ser executado mais de uma vez: registros já existentes são mantidos.
+
+Ao alterar os modelos, gere uma nova migração e revise o arquivo criado em `migrations/versions/` antes de aplicá-lo:
+
+```bash
+uv run alembic revision --autogenerate -m "descrição da mudança"
+```
 
 ## Execução
 
@@ -69,3 +113,5 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 ```
+
+Os testes aplicam as migrações no banco definido em `TEST_DATABASE_URL` e desfazem as alterações de cada teste ao final.
