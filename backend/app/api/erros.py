@@ -2,11 +2,14 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.core.excecoes import (
+    ArquivoMuitoGrande,
     ConflitoDeDados,
     CredenciaisInvalidas,
+    DadosInvalidos,
     ErroDeNegocio,
     OperacaoNaoPermitida,
     RecursoNaoEncontrado,
+    TipoDeArquivoNaoSuportado,
 )
 
 STATUS_POR_ERRO: dict[type[ErroDeNegocio], int] = {
@@ -14,6 +17,9 @@ STATUS_POR_ERRO: dict[type[ErroDeNegocio], int] = {
     ConflitoDeDados: status.HTTP_409_CONFLICT,
     CredenciaisInvalidas: status.HTTP_401_UNAUTHORIZED,
     OperacaoNaoPermitida: status.HTTP_403_FORBIDDEN,
+    DadosInvalidos: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    ArquivoMuitoGrande: status.HTTP_413_CONTENT_TOO_LARGE,
+    TipoDeArquivoNaoSuportado: status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
 }
 
 

@@ -120,10 +120,38 @@ Todas as rotas usam o prefixo `/api/v1`. A documentação completa, com exemplos
 | `GET` | `/usuarios/me` | Token | Dados do usuário autenticado. |
 | `PATCH` | `/usuarios/me` | Token | Altera nome, e-mail ou senha. E-mail e senha exigem `senha_atual`. |
 | `DELETE` | `/usuarios/me` | Token | Exclui a conta, a lista e as avaliações do usuário. Exige a senha. O único administrador não pode excluir a própria conta. |
+| `GET` | `/generos` | — | Lista os gêneros em ordem alfabética. |
+| `POST` | `/generos` | Admin | Cadastra um gênero (nome único, sem diferenciar maiúsculas). |
+| `PUT` | `/generos/{id}` | Admin | Renomeia um gênero. |
+| `DELETE` | `/generos/{id}` | Admin | Exclui um gênero; retorna `409` se houver obras associadas. |
+| `GET` | `/obras` | — | Busca paginada. Veja os parâmetros abaixo. |
+| `GET` | `/obras/{id}` | — | Detalhes da obra, com gêneros, média de notas e URL do pôster. |
+| `POST` | `/obras` | Admin | Cadastra uma obra (JSON). Filmes exigem `duracao_minutos`; séries, `temporadas`. |
+| `PUT` | `/obras/{id}` | Admin | Substitui todos os dados da obra. |
+| `DELETE` | `/obras/{id}` | Admin | Exclui a obra, com pôster, itens de lista e avaliações. |
+| `GET` | `/obras/{id}/poster` | — | Imagem do pôster. |
+| `PUT` | `/obras/{id}/poster` | Admin | Envia ou substitui o pôster (`multipart/form-data`, campo `arquivo`; PNG, JPEG ou WebP até 2 MB). |
+| `DELETE` | `/obras/{id}/poster` | Admin | Remove o pôster. |
+
+### Parâmetros de `GET /obras`
+
+| Parâmetro | Descrição |
+| --- | --- |
+| `texto` | Parte do título, sem diferenciar maiúsculas. |
+| `tipo` | `filme` ou `serie`. |
+| `generos` | Ids de gêneros; pode ser repetido (`?generos=1&generos=2`) e retorna obras com qualquer um deles. |
+| `ano_de`, `ano_ate` | Faixa de ano de lançamento. |
+| `nota_minima` | Média mínima de notas (1 a 5). |
+| `classificacoes` | Classificações indicativas aceitas; pode ser repetido. |
+| `ordenar_por` | `media` (padrão), `titulo` ou `ano_lancamento`. Obras sem avaliação ficam no fim. |
+| `direcao` | `asc` ou `desc`. Padrão: crescente para título, decrescente para os demais. |
+| `pagina`, `tamanho` | Paginação (padrão: página 1 com 20 itens; máximo de 100 por página). |
+
+A resposta tem o formato `{"itens": [...], "total": 100, "pagina": 1, "tamanho": 20}`.
 
 Nas rotas autenticadas, envie o cabeçalho `Authorization: Bearer <token>`. No Swagger, use o botão **Authorize** e informe o e-mail e a senha.
 
-Erros seguem o formato `{"detail": "mensagem"}`: `401` para token ou credenciais inválidos, `403` para senha incorreta ou falta de permissão, `404` para recurso inexistente, `409` para conflitos (como e-mail já cadastrado) e `422` para dados inválidos.
+Erros seguem o formato `{"detail": "mensagem"}`: `401` para token ou credenciais inválidos, `403` para senha incorreta ou falta de permissão, `404` para recurso inexistente, `409` para conflitos (como e-mail já cadastrado), `413`/`415` para pôster grande demais ou em formato não aceito e `422` para dados inválidos.
 
 ## Testes e qualidade
 
