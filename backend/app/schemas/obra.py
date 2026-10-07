@@ -12,23 +12,17 @@ from pydantic import (
     model_validator,
 )
 
-from app.models import TipoObra
+from app.models import StatusLista, TipoObra
 from app.models.obra import ANO_LANCAMENTO_MINIMO, CLASSIFICACOES_INDICATIVAS
 from app.schemas.genero import GeneroResposta
+from app.schemas.paginacao import Pagina, Paginacao
+from app.schemas.validadores import texto_vazio_como_nulo
 
 ANOS_FUTUROS_PERMITIDOS = 5
-TAMANHO_PAGINA_PADRAO = 20
-TAMANHO_PAGINA_MAXIMO = 100
-
-
-def _texto_vazio_como_nulo(valor: object) -> object:
-    if isinstance(valor, str):
-        return valor.strip() or None
-    return valor
 
 
 Titulo = Annotated[str, AfterValidator(str.strip), Field(min_length=1, max_length=200)]
-Sinopse = Annotated[str | None, BeforeValidator(_texto_vazio_como_nulo)]
+Sinopse = Annotated[str | None, BeforeValidator(texto_vazio_como_nulo)]
 Positivo = Annotated[int, Field(gt=0, le=32767)]
 
 
@@ -90,13 +84,13 @@ class ObraResposta(BaseModel):
     media_notas: float | None = Field(description="Média das notas, com uma casa decimal")
     total_avaliacoes: int
     url_poster: str | None = Field(description="Caminho do pôster na API, ou nulo se não houver")
+    meu_status: StatusLista | None = Field(
+        default=None, description="Status da obra na lista do usuário autenticado, se houver"
+    )
 
 
-class PaginaObras(BaseModel):
-    itens: list[ObraResposta]
-    total: int
-    pagina: int
-    tamanho: int
+class PaginaObras(Pagina[ObraResposta]):
+    pass
 
 
 class OrdenacaoObras(StrEnum):
@@ -110,7 +104,7 @@ class Direcao(StrEnum):
     DESC = "desc"
 
 
-class FiltrosObras(BaseModel):
+class FiltrosObras(Paginacao):
     """Parâmetros de busca, filtro, ordenação e paginação de obras."""
 
     texto: str | None = Field(default=None, description="Parte do título")
@@ -128,8 +122,6 @@ class FiltrosObras(BaseModel):
     direcao: Direcao | None = Field(
         default=None, description="Padrão: crescente para título e decrescente para os demais"
     )
-    pagina: int = Field(default=1, ge=1)
-    tamanho: int = Field(default=TAMANHO_PAGINA_PADRAO, ge=1, le=TAMANHO_PAGINA_MAXIMO)
 
     @property
     def direcao_efetiva(self) -> Direcao:
