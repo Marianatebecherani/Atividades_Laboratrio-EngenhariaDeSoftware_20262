@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.seguranca import ler_usuario_do_token
 from app.db.sessao import obter_sessao
 from app.models import PapelUsuario, Usuario
+from app.services.comentario_service import ComentarioService
 from app.services.filmes_usuario_service import FilmesUsuarioService
 from app.services.usuario_service import UsuarioService
 
@@ -56,3 +57,10 @@ def obter_filmes_usuario_service(sessao: SessaoDep) -> FilmesUsuarioService:
 
 
 FilmesUsuarioServiceDep = Annotated[FilmesUsuarioService, Depends(obter_filmes_usuario_service)]
+
+
+def obter_comentario_service(sessao: SessaoDep) -> ComentarioService:
+    return ComentarioService(sessao)
+
+
+ComentarioServiceDep = Annotated[ComentarioService, Depends(obter_comentario_service)]

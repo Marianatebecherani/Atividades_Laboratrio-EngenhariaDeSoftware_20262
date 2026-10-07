@@ -122,6 +122,47 @@ def test_lista_paginada_agrega_status_avaliacao_e_favorito(
     }
 
 
+def test_nota_do_comentario_publico_aparece_no_estado_do_filme(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    tmdb_id = 603
+    cliente.post(
+        f"/api/v1/filmes/{tmdb_id}/comentarios",
+        json={"conteudo": "Comentário público com nota", "nota": 4},
+        headers=cabecalho_usuario,
+    )
+
+    resposta = cliente.get(f"/api/v1/usuarios/me/filmes/{tmdb_id}", headers=cabecalho_usuario)
+
+    assert resposta.status_code == 200
+    assert resposta.json()["nota_pessoal"] == 4
+    assert resposta.json()["comentario"] == "Comentário público com nota"
+
+
+def test_nota_do_comentario_publico_aparece_na_lista_agregada(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    tmdb_id = 603
+    cliente.put(
+        f"/api/v1/usuarios/me/filmes/{tmdb_id}/lista",
+        json={"status": "assistido"},
+        headers=cabecalho_usuario,
+    )
+    cliente.post(
+        f"/api/v1/filmes/{tmdb_id}/comentarios",
+        json={"conteudo": "Também ótimo", "nota": 3},
+        headers=cabecalho_usuario,
+    )
+
+    resposta = cliente.get(
+        "/api/v1/usuarios/me/filmes?pagina=1&tamanho=10", headers=cabecalho_usuario
+    )
+
+    item = next(item for item in resposta.json()["itens"] if item["tmdb_id"] == tmdb_id)
+    assert item["nota_pessoal"] == 3
+    assert item["comentario"] == "Também ótimo"
+
+
 def test_rotas_de_dados_tmdb_exigem_autenticacao(cliente: TestClient) -> None:
     assert cliente.get("/api/v1/usuarios/me/favoritos").status_code == 401
     assert cliente.get("/api/v1/usuarios/me/filmes/27205").status_code == 401
