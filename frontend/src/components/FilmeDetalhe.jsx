@@ -98,6 +98,8 @@ function FilmeDetalhe({ tmdbId, token, usuario }) {
       setMeuComentario(publicado);
       await atualizarEstadoUsuario();
       setAtualizarComentarios((valor) => valor + 1);
+      
+      window.dispatchEvent(new Event("recomendacoes:atualizar"));
     } catch (error) {
       setErroAcao(error.message);
     } finally {

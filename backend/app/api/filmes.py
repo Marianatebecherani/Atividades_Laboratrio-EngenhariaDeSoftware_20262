@@ -1,25 +1,21 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Query, Response, status
+from fastapi import APIRouter, Path, Query, Response, status
 
-from app.api.dependencias import FilmesUsuarioServiceDep, UsuarioAtualDep
-from app.core.config import obter_configuracoes
+from app.api.dependencias import (
+    FilmesUsuarioServiceDep,
+    TmdbServiceDep,
+    UsuarioAtualDep,
+)
 from app.schemas.tmdb import (
     BuscaFilmesTmdbResposta,
     DescobrirFilmesParametros,
     FavoritoTmdbResposta,
     FilmeTmdbResposta,
 )
-from app.services.tmdb_service import TmdbService
 
 router = APIRouter(prefix="/filmes", tags=["Filmes TMDb"])
 
-
-def obter_tmdb_service() -> TmdbService:
-    return TmdbService(obter_configuracoes().tmdb_api_token)
-
-
-TmdbServiceDep = Annotated[TmdbService, Depends(obter_tmdb_service)]
 PaginaQuery = Annotated[int, Query(ge=1, le=500)]
 TmdbIdPath = Annotated[int, Path(gt=0)]
 

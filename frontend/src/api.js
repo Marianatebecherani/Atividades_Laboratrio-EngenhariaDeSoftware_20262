@@ -140,3 +140,9 @@ export function removerComentario(comentarioId, token) {
   return requisicao(`/comentarios/${comentarioId}`, { method: "DELETE", token });
 }
 
+export function listarRecomendacoesTmdb(token, limite = 10) {
+  return requisicao(
+    `/usuarios/me/recomendacoes?limite=${limite}`,
+    { token },
+  );
+}
