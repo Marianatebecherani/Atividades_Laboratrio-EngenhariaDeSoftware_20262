@@ -15,12 +15,16 @@ from app.schemas.tmdb import (
     PessoaElencoTmdbResposta,
     PessoaEquipeTmdbResposta,
 )
+from app.services.cache_tmdb import CacheTmdb
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p"
 IDIOMA = "pt-BR"
 TIMEOUT_SEGUNDOS = 10.0
 CACHE_GENEROS_SEGUNDOS = 6 * 60 * 60
+# Validade das respostas no cache: dados de um filme mudam pouco; listas e buscas, mais.
+VALIDADE_FILME_SEGUNDOS = 24 * 60 * 60
+VALIDADE_BUSCA_SEGUNDOS = 30 * 60
 LIMITES_CONEXOES = httpx.Limits(max_connections=20, max_keepalive_connections=20)
 
 
@@ -46,6 +50,7 @@ class TmdbService:
 
     Com `cliente`, usa o cliente HTTP compartilhado pela API (as conexões ficam
     abertas entre as requisições). Sem ele, abre um cliente a cada consulta.
+    Com `cache`, reaproveita respostas recentes em vez de consultar o TMDb de novo.
     """
 
     _cache_generos: list[GeneroTmdbResposta] | None = None
@@ -57,10 +62,12 @@ class TmdbService:
         transport: httpx.AsyncBaseTransport | None = None,
         *,
         cliente: httpx.AsyncClient | None = None,
+        cache: CacheTmdb | None = None,
     ) -> None:
         self._token = token
         self._transport = transport
         self._cliente = cliente
+        self._cache = cache
 
     async def buscar_filmes(self, query: str, page: int = 1) -> BuscaFilmesTmdbResposta:
         termo = query.strip()
@@ -70,6 +77,7 @@ class TmdbService:
         dados = await self._get(
             "/search/movie",
             params={"query": termo, "language": IDIOMA, "page": page},
+            validade_segundos=VALIDADE_BUSCA_SEGUNDOS,
         )
         return self._mapear_pagina(dados)
 
@@ -82,7 +90,11 @@ class TmdbService:
         }
         if categoria not in caminhos:
             raise ErroTmdb(404, "Categoria de filmes não encontrada.")
-        dados = await self._get(caminhos[categoria], params={"language": IDIOMA, "page": page})
+        dados = await self._get(
+            caminhos[categoria],
+            params={"language": IDIOMA, "page": page},
+            validade_segundos=VALIDADE_BUSCA_SEGUNDOS,
+        )
         return self._mapear_pagina(dados)
 
     async def descobrir_filmes(
@@ -111,7 +123,9 @@ class TmdbService:
         nota_maxima = filtros.max_rating
         if nota_maxima is not None:
             params["vote_average.lte"] = nota_maxima
-        dados = await self._get("/discover/movie", params=params)
+        dados = await self._get(
+            "/discover/movie", params=params, validade_segundos=VALIDADE_BUSCA_SEGUNDOS
+        )
         return self._mapear_pagina(dados)
 
     async def listar_generos(self) -> list[GeneroTmdbResposta]:
@@ -135,6 +149,7 @@ class TmdbService:
         dados = await self._get(
             f"/movie/{tmdb_id}",
             params={"language": IDIOMA, "append_to_response": "credits"},
+            validade_segundos=VALIDADE_FILME_SEGUNDOS,
         )
         try:
             return self._mapear_filme(dados)
@@ -148,6 +163,7 @@ class TmdbService:
         dados = await self._get(
             f"/movie/{tmdb_id}",
             params={"language": IDIOMA, "append_to_response": "recommendations"},
+            validade_segundos=VALIDADE_FILME_SEGUNDOS,
         )
         try:
             recomendados = (dados.get("recommendations") or {}).get("results") or []
@@ -158,9 +174,20 @@ class TmdbService:
         except (AttributeError, KeyError, TypeError, ValidationError) as erro:
             raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.") from erro
 
-    async def _get(self, caminho: str, params: dict[str, str | int | float]) -> dict[str, Any]:
+    async def _get(
+        self,
+        caminho: str,
+        params: dict[str, str | int | float],
+        validade_segundos: float | None = None,
+    ) -> dict[str, Any]:
+        """Consulta o TMDb. Com `validade_segundos`, usa e alimenta o cache (se houver)."""
         if self._token is None or not self._token.get_secret_value().strip():
             raise ErroTmdb(503, "A integração com o TMDb não está configurada no servidor.")
+
+        usar_cache = self._cache is not None and validade_segundos is not None
+        chave = (caminho, tuple(sorted(params.items())))
+        if usar_cache and (dados_guardados := self._cache.obter(chave)) is not None:
+            return dados_guardados
 
         cabecalhos = {
             "Authorization": f"Bearer {self._token.get_secret_value()}",
@@ -198,6 +225,10 @@ class TmdbService:
             raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.") from erro
         if not isinstance(dados, dict):
             raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.")
+
+        # Só respostas válidas entram no cache; erros são consultados de novo na próxima vez.
+        if usar_cache:
+            self._cache.guardar(chave, dados, validade_segundos)
         return dados
 
     @staticmethod

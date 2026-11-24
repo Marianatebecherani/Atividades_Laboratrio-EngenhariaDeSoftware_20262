@@ -80,10 +80,11 @@ ComentarioServiceDep = Annotated[
 
 
 def obter_tmdb_service(request: Request) -> TmdbService:
-    # O cliente compartilhado é criado no ciclo de vida da API (app/main.py).
+    # O cliente compartilhado e o cache são criados no ciclo de vida da API (app/main.py).
     return TmdbService(
         obter_configuracoes().tmdb_api_token,
         cliente=getattr(request.app.state, "cliente_tmdb", None),
+        cache=getattr(request.app.state, "cache_tmdb", None),
     )
 
 
