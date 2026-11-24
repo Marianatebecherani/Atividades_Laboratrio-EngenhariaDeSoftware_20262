@@ -2966,6 +2966,12 @@ button {
     font-size: 13px;
   }
 
+  .tmdb-recomendacao-tempo {
+    margin: 10px 0 0;
+    color: #9696a5;
+    font-size: 12px;
+  }
+
   .tmdb-detail {
     margin-top: 22px;
     overflow: hidden;
