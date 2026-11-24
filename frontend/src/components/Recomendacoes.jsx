@@ -1,7 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import { listarRecomendacoesTmdb } from "../api";
+import { useRecomendacoes } from "../hooks/useRecomendacoes";
 import FilmeDetalhe from "./FilmeDetalhe";
+
+const ESTRATEGIAS = [
+  {
+    valor: "perfil",
+    rotulo: "Seu perfil",
+    descricao: "Filmes dos gêneros e países que você avaliou melhor.",
+  },
+  {
+    valor: "similares",
+    rotulo: "Parecidos com seus favoritos",
+    descricao: "Filmes parecidos com os que você avaliou com 4 ou 5 estrelas.",
+  },
+  {
+    valor: "populares",
+    rotulo: "Em alta",
+    descricao: "Filmes populares no TMDb que você ainda não avaliou nem assistiu.",
+  },
+];
 
 function formatarData(valor) {
   if (!valor) return "Data de lançamento indisponível";
@@ -14,65 +32,24 @@ function nota(valor) {
 }
 
 function Recomendacoes({ token, usuario }) {
-  const [filmes, setFilmes] = useState([]);
-  const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState("");
+  const [estrategia, setEstrategia] = useState("perfil");
   const [detalhe, setDetalhe] = useState(null);
+  const { filmes, estrategiaUsada, carregando, erro, tentarNovamente } = useRecomendacoes(
+    token,
+    estrategia,
+  );
 
-  useEffect(() => {
-    let ativo = true;
-
-    async function carregarRecomendacoes() {
-        setCarregando(true);
-        setErro("");
-
-        try {
-        const resposta = await listarRecomendacoesTmdb(token, 10);
-
-        if (ativo) {
-            setFilmes(resposta.itens || []);
-        }
-        } catch (error) {
-        if (ativo) {
-            setErro(error.message);
-        }
-        } finally {
-        if (ativo) {
-            setCarregando(false);
-        }
-        }
-    }
-
-    if (token) {
-        carregarRecomendacoes();
-
-        window.addEventListener(
-        "recomendacoes:atualizar",
-        carregarRecomendacoes,
-        );
-    } else {
-        setFilmes([]);
-        setCarregando(false);
-    }
-
-    return () => {
-        ativo = false;
-        window.removeEventListener(
-        "recomendacoes:atualizar",
-        carregarRecomendacoes,
-        );
-    };
-    }, [token]);
+  const escolhida = ESTRATEGIAS.find((item) => item.valor === estrategia);
+  const usouReserva =
+    !carregando && !erro && estrategiaUsada !== null && estrategiaUsada !== estrategia;
 
   return (
-    <section className="tmdb-search">
+    <section className="tmdb-search" aria-labelledby="titulo-recomendacoes">
       <div className="tmdb-search-heading">
         <div>
           <span className="eyebrow">Sua experiência personalizada</span>
-          <h2>Recomendados para você</h2>
-          <p>
-            Filmes selecionados com base nas suas avaliações.
-          </p>
+          <h2 id="titulo-recomendacoes">Recomendados para você</h2>
+          <p>{escolhida.descricao}</p>
         </div>
 
         {detalhe && (
@@ -86,6 +63,21 @@ function Recomendacoes({ token, usuario }) {
         )}
       </div>
 
+      {!detalhe && (
+        <div className="tmdb-controls tmdb-recomendacao-controles">
+          <label className="tmdb-mode-control">
+            Recomendar por
+            <select value={estrategia} onChange={(event) => setEstrategia(event.target.value)}>
+              {ESTRATEGIAS.map((item) => (
+                <option key={item.valor} value={item.valor}>
+                  {item.rotulo}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+
       {carregando && (
         <p aria-live="polite">Buscando recomendações para você...</p>
       )}
@@ -93,21 +85,17 @@ function Recomendacoes({ token, usuario }) {
       {erro && (
         <div className="tmdb-error" role="alert">
           <p>Não foi possível carregar suas recomendações: {erro}</p>
-          <button
-            type="button"
-            onClick={() => {
-              setFilmes([]);
-              setErro("");
-              setCarregando(true);
-              listarRecomendacoesTmdb(token, 10)
-                .then((resposta) => setFilmes(resposta.itens || []))
-                .catch((error) => setErro(error.message))
-                .finally(() => setCarregando(false));
-            }}
-          >
+          <button type="button" onClick={tentarNovamente}>
             Tentar novamente
           </button>
         </div>
+      )}
+
+      {usouReserva && !detalhe && (
+        <p className="tmdb-recomendacao-aviso" aria-live="polite">
+          Ainda não há avaliações suficientes para essa opção, então mostramos os filmes em
+          alta. Avalie alguns filmes para personalizar suas sugestões.
+        </p>
       )}
 
       {!carregando && !erro && filmes.length === 0 && (
@@ -134,7 +122,8 @@ function Recomendacoes({ token, usuario }) {
                 key={filme.tmdb_id}
                 type="button"
                 onClick={() => setDetalhe(filme.tmdb_id)}
-                aria-label={`Ver ${filme.titulo}, ${nota(filme.nota_tmdb)}`}
+                aria-label={`Ver ${filme.titulo}, ${nota(filme.nota_tmdb)}. ${filme.motivo}`}
+                title={filme.motivo}
               >
                 {filme.poster_url ? (
                   <img
@@ -148,6 +137,7 @@ function Recomendacoes({ token, usuario }) {
 
                 <span className="tmdb-result-info">
                   <strong>{filme.titulo}</strong>
+                  <span className="tmdb-result-motivo">{filme.motivo}</span>
                   <span>{formatarData(filme.data_lancamento)}</span>
                 </span>
 

@@ -2951,6 +2951,21 @@ button {
     font-size: 10px;
   }
 
+  .tmdb-result-info .tmdb-result-motivo {
+    color: #f9a8d4;
+    font-weight: 600;
+  }
+
+  .tmdb-recomendacao-controles {
+    margin-bottom: 16px;
+  }
+
+  .tmdb-recomendacao-aviso {
+    margin: 0 0 12px;
+    color: #c4c4ce;
+    font-size: 13px;
+  }
+
   .tmdb-detail {
     margin-top: 22px;
     overflow: hidden;
