@@ -80,7 +80,7 @@ Todas as rotas usam o prefixo `/api/v1`.
 | `GET` | `/filmes/discover` | — | Descoberta com filtros TMDb. |
 | `GET` | `/filmes/generos` | — | Gêneros de filmes do TMDb. |
 | `GET` | `/filmes/{tmdb_id}` | — | Detalhes, créditos e imagens de um filme. |
-| `GET` | `/usuarios/me/filmes` | Token | Estado pessoal agregado, paginado. |
+| `GET` | `/usuarios/me/filmes?status=assistido&pagina=1&tamanho=20` | Token | Estado pessoal agregado, paginado. O filtro `status` (opcional) aceita `quero_assistir`, `assistindo` ou `assistido` e é aplicado antes da paginação. |
 | `GET` | `/usuarios/me/filmes/{tmdb_id}` | Token | Status, avaliação e favorito para um filme. |
 | `PUT`, `DELETE` | `/usuarios/me/filmes/{tmdb_id}/lista` | Token | Define ou remove status pessoal. |
 | `PUT`, `DELETE` | `/usuarios/me/filmes/{tmdb_id}/avaliacao` | Token | Salva ou remove nota pessoal e comentário. |
@@ -97,6 +97,8 @@ Todas as rotas usam o prefixo `/api/v1`.
 Nas rotas autenticadas, envie `Authorization: Bearer <token>`. O endpoint `/filmes/discover` aceita gêneros, ano, intervalo de lançamento, nota, idioma, ordenação e página. Os resultados e imagens são obtidos do TMDb em tempo real; o token do provedor nunca é retornado pela API.
 
 A lista, as avaliações e os favoritos guardam apenas o `tmdb_id` e os dados pessoais do usuário. A nota pessoal (1 a 5) é independente da nota pública do TMDb.
+
+Filtros do RF4 (buscar e filtrar por gênero, ano e status): gênero e ano em `/filmes/discover` (tela de Busca) e status em `/usuarios/me/filmes?status=` (abas da Minha Lista).
 
 Este produto usa a API TMDb, mas não é endossado nem certificado pelo TMDb.
 

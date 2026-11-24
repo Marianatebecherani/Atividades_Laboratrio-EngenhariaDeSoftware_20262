@@ -173,3 +173,66 @@ def test_rotas_de_dados_tmdb_exigem_autenticacao(cliente: TestClient) -> None:
         == 401
     )
     assert cliente.post("/api/v1/filmes/27205/favoritar").status_code == 401
+
+
+def preparar_lista(cliente: TestClient, cabecalho: dict[str, str]) -> None:
+    """Filmes em cada situação, um só avaliado e um só favorito (sem status)."""
+    for tmdb_id, status in (
+        (100, "assistido"),
+        (101, "quero_assistir"),
+        (102, "assistido"),
+        (103, "assistindo"),
+        (104, "assistido"),
+    ):
+        cliente.put(
+            f"/api/v1/usuarios/me/filmes/{tmdb_id}/lista",
+            json={"status": status},
+            headers=cabecalho,
+        )
+    cliente.put("/api/v1/usuarios/me/filmes/105/avaliacao", json={"nota": 4}, headers=cabecalho)
+    cliente.post("/api/v1/filmes/106/favoritar", headers=cabecalho)
+
+
+def test_lista_filtra_por_status_e_conta_so_os_filtrados(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    preparar_lista(cliente, cabecalho_usuario)
+
+    todos = cliente.get("/api/v1/usuarios/me/filmes", headers=cabecalho_usuario).json()
+    assistidos = cliente.get(
+        "/api/v1/usuarios/me/filmes?status=assistido", headers=cabecalho_usuario
+    ).json()
+    quero_assistir = cliente.get(
+        "/api/v1/usuarios/me/filmes?status=quero_assistir", headers=cabecalho_usuario
+    ).json()
+
+    assert todos["total"] == 7
+    assert assistidos["total"] == 3
+    assert {item["tmdb_id"] for item in assistidos["itens"]} == {100, 102, 104}
+    assert {item["status"] for item in assistidos["itens"]} == {"assistido"}
+    assert [item["tmdb_id"] for item in quero_assistir["itens"]] == [101]
+
+
+def test_filtro_por_status_e_aplicado_antes_da_paginacao(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    preparar_lista(cliente, cabecalho_usuario)
+
+    resposta = cliente.get(
+        "/api/v1/usuarios/me/filmes?status=assistido&pagina=2&tamanho=2",
+        headers=cabecalho_usuario,
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["total"] == 3
+    assert resposta.json()["pagina"] == 2
+    assert len(resposta.json()["itens"]) == 1
+    assert resposta.json()["itens"][0]["status"] == "assistido"
+
+
+def test_filtro_por_status_invalido_retorna_422(
+    cliente: TestClient, cabecalho_usuario: dict[str, str]
+) -> None:
+    resposta = cliente.get("/api/v1/usuarios/me/filmes?status=visto", headers=cabecalho_usuario)
+
+    assert resposta.status_code == 422
