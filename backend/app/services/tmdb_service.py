@@ -1,3 +1,5 @@
+import ssl
+from functools import cache
 from time import monotonic
 from typing import Any
 
@@ -19,10 +21,32 @@ TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p"
 IDIOMA = "pt-BR"
 TIMEOUT_SEGUNDOS = 10.0
 CACHE_GENEROS_SEGUNDOS = 6 * 60 * 60
+LIMITES_CONEXOES = httpx.Limits(max_connections=20, max_keepalive_connections=20)
+
+
+@cache
+def _contexto_tls() -> ssl.SSLContext:
+    # Carregar os certificados leva cerca de 200 ms, então o contexto é criado uma só vez.
+    return httpx.create_ssl_context()
+
+
+def criar_cliente_tmdb() -> httpx.AsyncClient:
+    """Cria o cliente HTTP compartilhado, que reaproveita as conexões com o TMDb."""
+    return httpx.AsyncClient(
+        base_url=TMDB_BASE_URL,
+        headers={"Accept": "application/json"},
+        timeout=TIMEOUT_SEGUNDOS,
+        limits=LIMITES_CONEXOES,
+        verify=_contexto_tls(),
+    )
 
 
 class TmdbService:
-    """Cliente isolado para pesquisa e detalhes de filmes no TMDb."""
+    """Cliente isolado para pesquisa e detalhes de filmes no TMDb.
+
+    Com `cliente`, usa o cliente HTTP compartilhado pela API (as conexões ficam
+    abertas entre as requisições). Sem ele, abre um cliente a cada consulta.
+    """
 
     _cache_generos: list[GeneroTmdbResposta] | None = None
     _cache_generos_expira_em = 0.0
@@ -31,9 +55,12 @@ class TmdbService:
         self,
         token: SecretStr | None,
         transport: httpx.AsyncBaseTransport | None = None,
+        *,
+        cliente: httpx.AsyncClient | None = None,
     ) -> None:
         self._token = token
         self._transport = transport
+        self._cliente = cliente
 
     async def buscar_filmes(self, query: str, page: int = 1) -> BuscaFilmesTmdbResposta:
         termo = query.strip()
@@ -135,17 +162,22 @@ class TmdbService:
         if self._token is None or not self._token.get_secret_value().strip():
             raise ErroTmdb(503, "A integração com o TMDb não está configurada no servidor.")
 
+        cabecalhos = {
+            "Authorization": f"Bearer {self._token.get_secret_value()}",
+            "Accept": "application/json",
+        }
         try:
-            async with httpx.AsyncClient(
-                base_url=TMDB_BASE_URL,
-                headers={
-                    "Authorization": f"Bearer {self._token.get_secret_value()}",
-                    "Accept": "application/json",
-                },
-                timeout=TIMEOUT_SEGUNDOS,
-                transport=self._transport,
-            ) as cliente:
-                resposta = await cliente.get(caminho, params=params)
+            if self._cliente is not None:
+                resposta = await self._cliente.get(caminho, params=params, headers=cabecalhos)
+            else:
+                async with httpx.AsyncClient(
+                    base_url=TMDB_BASE_URL,
+                    headers=cabecalhos,
+                    timeout=TIMEOUT_SEGUNDOS,
+                    transport=self._transport,
+                    verify=_contexto_tls(),
+                ) as cliente:
+                    resposta = await cliente.get(caminho, params=params)
         except httpx.TimeoutException as erro:
             raise ErroTmdb(504, "O TMDb demorou demais para responder.") from erro
         except httpx.RequestError as erro:

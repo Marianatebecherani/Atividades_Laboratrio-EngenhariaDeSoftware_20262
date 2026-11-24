@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -79,8 +79,12 @@ ComentarioServiceDep = Annotated[
 ]
 
 
-def obter_tmdb_service() -> TmdbService:
-    return TmdbService(obter_configuracoes().tmdb_api_token)
+def obter_tmdb_service(request: Request) -> TmdbService:
+    # O cliente compartilhado é criado no ciclo de vida da API (app/main.py).
+    return TmdbService(
+        obter_configuracoes().tmdb_api_token,
+        cliente=getattr(request.app.state, "cliente_tmdb", None),
+    )
 
 
 TmdbServiceDep = Annotated[
