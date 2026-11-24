@@ -1,3 +1,6 @@
+import asyncio
+import math
+
 from app.core.excecoes import ErroTmdb
 from app.models.enums import NomeEstrategia
 from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao, Recomendacao
@@ -11,6 +14,7 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
 
     MAX_PAGINAS_DISCOVER = 10
     MAX_PAISES_PREFERIDOS = 3
+    FILMES_POR_PAGINA = 20  # tamanho das páginas do TMDb
 
     async def recomendar(self, contexto: ContextoRecomendacao) -> list[Recomendacao]:
         notas = contexto.notas
@@ -26,10 +30,15 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
         pontuacao_paises: dict[str, int] = {}
         frequencia_paises: dict[str, int] = {}
 
-        # Busca os detalhes de cada filme avaliado para descobrir
-        # seus gêneros e países de produção.
-        for tmdb_id, nota in notas.items():
-            filme = await self.tmdb.obter_filme(tmdb_id)
+        # Busca em paralelo os detalhes de cada filme avaliado (gêneros e países de
+        # produção) e os nomes dos gêneros, usados no motivo.
+        avaliados = list(notas.items())
+        *filmes_avaliados, nomes_generos = await asyncio.gather(
+            *(self.tmdb.obter_filme(tmdb_id) for tmdb_id, _ in avaliados),
+            self._nomes_dos_generos(),
+        )
+
+        for (_, nota), filme in zip(avaliados, filmes_avaliados, strict=True):
             peso = nota - 3
 
             for genero_id in set(filme.genero_ids):
@@ -81,18 +90,26 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
         # Registra quais países fizeram cada filme aparecer nas buscas.
         paises_dos_candidatos: dict[int, set[str]] = {}
 
-        async def buscar_candidatos(pais: str | None = None) -> None:
-            for pagina in range(1, self.MAX_PAGINAS_DISCOVER + 1):
-                filtros = DescobrirFilmesParametros(
-                    page=pagina,
-                    genre_ids=generos_preferidos,
-                    genre_operator="OR",
-                    origin_country=pais,
-                    sort_by="popularity.desc",
+        meta = limite * 5
+
+        async def buscar_candidatos(pais: str | None, paginas: range) -> bool:
+            """Busca as páginas em paralelo e informa se ainda há páginas a buscar."""
+            resultados = await asyncio.gather(
+                *(
+                    self.tmdb.descobrir_filmes(
+                        DescobrirFilmesParametros(
+                            page=pagina,
+                            genre_ids=generos_preferidos,
+                            genre_operator="OR",
+                            origin_country=pais,
+                            sort_by="popularity.desc",
+                        )
+                    )
+                    for pagina in paginas
                 )
+            )
 
-                resultado = await self.tmdb.descobrir_filmes(filtros)
-
+            for resultado in resultados:
                 for filme in resultado.resultados:
                     if filme.tmdb_id in filmes_excluidos:
                         continue
@@ -102,23 +119,36 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
                     if pais:
                         paises_dos_candidatos.setdefault(filme.tmdb_id, set()).add(pais)
 
-                if (
-                    len(candidatos) >= limite * 5
-                    or pagina >= resultado.total_paginas
-                    or not resultado.resultados
-                ):
-                    break
+            ultimo = resultados[-1]
+            return bool(ultimo.resultados) and paginas[-1] < min(
+                ultimo.total_paginas, self.MAX_PAGINAS_DISCOVER
+            )
 
-        # Busca geral por gêneros, sem limitar a um país.
+        # Primeira rodada, em paralelo: as páginas da busca geral por gêneros que devem
+        # bastar para a meta e a primeira página do país preferido.
+        primeira_rodada: list[tuple[str | None, int]] = []
         if generos_preferidos:
-            await buscar_candidatos()
+            paginas_gerais = math.ceil(meta / self.FILMES_POR_PAGINA)
+            primeira_rodada.append((None, min(paginas_gerais, self.MAX_PAGINAS_DISCOVER)))
+        if paises_preferidos:
+            primeira_rodada.append((paises_preferidos[0], 1))
 
-        # Complementa com buscas específicas pelos países preferidos.
-        for pais in paises_preferidos:
-            await buscar_candidatos(pais)
+        ha_mais_paginas = await asyncio.gather(
+            *(buscar_candidatos(pais, range(1, paginas + 1)) for pais, paginas in primeira_rodada)
+        )
 
-            if len(candidatos) >= limite * 5:
-                break
+        # Se ainda faltarem candidatos, continua página a página, na mesma ordem da
+        # versão sequencial: busca geral, país preferido e os demais países.
+        continuacoes = [
+            (pais, paginas + 1, ha_mais)
+            for (pais, paginas), ha_mais in zip(primeira_rodada, ha_mais_paginas, strict=True)
+        ]
+        continuacoes += [(pais, 1, True) for pais in paises_preferidos[1:]]
+
+        for pais, pagina, ha_mais in continuacoes:
+            while ha_mais and len(candidatos) < meta:
+                ha_mais = await buscar_candidatos(pais, range(pagina, pagina + 1))
+                pagina += 1
 
         # Ordena combinando afinidade de gênero e país.
         def pontuar_filme(filme: FilmeTmdbResposta) -> tuple[float, float, float]:
@@ -142,8 +172,6 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
             key=pontuar_filme,
             reverse=True,
         )[:limite]
-
-        nomes_generos = await self._nomes_dos_generos() if recomendados else {}
 
         return [
             Recomendacao(
