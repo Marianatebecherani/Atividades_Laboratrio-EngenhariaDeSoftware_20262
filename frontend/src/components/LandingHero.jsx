@@ -5,10 +5,7 @@ function LandingHero({ onGetStarted, onLoginClick }) {
 
       <div className="landing-hero-container">
         <div className="landing-hero-content">
-          <div className="landing-badge">
-            ⭐ Seu universo cinematográfico
-          </div>
-
+         
           <h1 className="landing-hero-title">
             Descubra.
             <br />

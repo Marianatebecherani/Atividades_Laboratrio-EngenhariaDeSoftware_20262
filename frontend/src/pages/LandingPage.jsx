@@ -24,6 +24,7 @@ function LandingPage({ onLogin }) {
       />
 
       <div className="landing-hero-wrapper">
+        <div className="landing-carousel-background" />
         <LandingHero
           onGetStarted={() => setModal("register")}
           onLoginClick={() => setModal("login")}

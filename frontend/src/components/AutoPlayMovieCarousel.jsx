@@ -36,21 +36,17 @@ function AutoPlayMovieCarousel() {
     return () => clearInterval(intervalo);
   }, [filmes, pausado]);
 
-  // Atualiza o background da hero-wrapper
+  // Atualiza o background do carousel
   useEffect(() => {
     if (filmes.length === 0) return;
 
     const filmeAtual = filmes[ativo];
-    const wrapper = document.querySelector(".landing-hero-wrapper");
+    const carousel = document.querySelector(".landing-carousel-background");
     
-    if (wrapper && filmeAtual.poster_url) {
-      wrapper.style.backgroundImage = `url(${filmeAtual.poster_url})`;
+    if (carousel && filmeAtual.poster_url) {
+      carousel.style.backgroundImage = `url(${filmeAtual.poster_url})`;
     }
   }, [ativo, filmes]);
-
-  if (carregando || filmes.length === 0) {
-    return null;
-  }
 
   if (erro) {
     return null;
