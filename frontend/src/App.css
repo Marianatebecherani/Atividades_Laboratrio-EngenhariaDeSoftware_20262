@@ -2633,6 +2633,25 @@ button {
     margin: 0 0 16px;
   }
 
+  .tmdb-category-tabs button {
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .tmdb-category-tabs button[aria-pressed="true"] {
+    border-color: transparent;
+    background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+  }
+
+  .tmdb-category-tabs button:focus-visible {
+    outline: 2px solid rgba(236, 72, 153, 0.6);
+    outline-offset: 2px;
+  }
+
   .tmdb-discover-filters {
     display: grid;
     flex: 1;

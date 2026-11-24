@@ -108,8 +108,10 @@ export function listarFavoritosTmdb(token, page = 1) {
   return requisicao(`/usuarios/me/favoritos?pagina=${page}&tamanho=20`, { token });
 }
 
-export function listarFilmesUsuarioTmdb(token, page = 1) {
-  return requisicao(`/usuarios/me/filmes?pagina=${page}&tamanho=8`, { token });
+export function listarFilmesUsuarioTmdb(token, page = 1, status = "") {
+  const parametros = new URLSearchParams({ pagina: String(page), tamanho: "8" });
+  if (status) parametros.set("status", status);
+  return requisicao(`/usuarios/me/filmes?${parametros}`, { token });
 }
 
 export function listarComentariosFilme(tmdbId, page = 1, tamanho = 20) {

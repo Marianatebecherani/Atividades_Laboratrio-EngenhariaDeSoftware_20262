@@ -9,9 +9,13 @@ const ROTULOS_STATUS = {
   assistido: "Assistido",
 };
 
+// "" mostra todos os filmes acompanhados (com ou sem status na lista).
+const FILTROS = [["", "Todos"], ...Object.entries(ROTULOS_STATUS)];
+
 function TmdbMinhaLista({ token, usuario }) {
   const [itens, setItens] = useState([]);
   const [pagina, setPagina] = useState(1);
+  const [filtro, setFiltro] = useState("");
   const [total, setTotal] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -20,7 +24,7 @@ function TmdbMinhaLista({ token, usuario }) {
 
   const carregarLista = useCallback(() => {
     let ativo = true;
-    listarFilmesUsuarioTmdb(token, pagina)
+    listarFilmesUsuarioTmdb(token, pagina, filtro)
       .then(async (resposta) => {
         const filmes = await Promise.all(
           resposta.itens.map(async (estado) => {
@@ -46,7 +50,7 @@ function TmdbMinhaLista({ token, usuario }) {
     return () => {
       ativo = false;
     };
-  }, [token, pagina]);
+  }, [token, pagina, filtro]);
 
   useEffect(() => carregarLista(), [carregarLista]);
 
@@ -55,16 +59,42 @@ function TmdbMinhaLista({ token, usuario }) {
     carregarLista();
   };
 
-  if (carregando && itens.length === 0) {
-    return <p className="data-loading">Carregando seus filmes TMDb...</p>;
-  }
+  const selecionarFiltro = (valor) => {
+    if (valor === filtro) return;
+    // Limpa a lista para não mostrar filmes de outro status enquanto a nova carrega.
+    setItens([]);
+    setTotal(0);
+    setErro("");
+    setCarregando(true);
+    setPagina(1);
+    setFiltro(valor);
+  };
 
   return (
     <section className="tmdb-user-list">
       <h2>Seus filmes TMDb</h2>
+      <div className="tmdb-category-tabs" role="group" aria-label="Filtrar seus filmes por status">
+        {FILTROS.map(([valor, rotulo]) => (
+          <button
+            key={valor || "todos"}
+            type="button"
+            aria-pressed={filtro === valor}
+            onClick={() => selecionarFiltro(valor)}
+          >
+            {rotulo}
+          </button>
+        ))}
+      </div>
+      {carregando && itens.length === 0 && (
+        <p className="data-loading" aria-live="polite">Carregando seus filmes TMDb...</p>
+      )}
       {erro && <p className="tmdb-error" role="alert">{erro}</p>}
       {!carregando && itens.length === 0 && !erro && (
-        <p>Seus status, avaliações e favoritos de filmes TMDb aparecerão aqui.</p>
+        <p>
+          {filtro
+            ? `Nenhum filme marcado como "${ROTULOS_STATUS[filtro]}".`
+            : "Seus status, avaliações e favoritos de filmes TMDb aparecerão aqui."}
+        </p>
       )}
       <div className="tmdb-user-list-grid">
         {itens.map(({ estado, filme }) => (
