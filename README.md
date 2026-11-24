@@ -90,6 +90,9 @@ Aplicação para registrar filmes e séries assistidos, manter uma lista "Quero 
 | Repository | [backend/app/repositories/](backend/app/repositories/) | Acesso aos dados de usuários, listas, avaliações, comentários e favoritos. |
 | Strategy | [backend/app/recomendacoes/](backend/app/recomendacoes/) | Motor de recomendações com as estratégias `perfil`, `similares` e `populares` ([detalhes](backend/README.md#recomendações-padrão-strategy)). |
 
+## Modelagem de dados
+
+O DER do banco está em [docs/der.md](docs/der.md), com as tabelas, chaves, restrições e índices. O PostgreSQL guarda as contas e o estado pessoal de cada usuário (lista, avaliações, comentários e favoritos). Os filmes vêm do TMDb e são referenciados pelo `tmdb_id`.
 
 
 ## Execução
