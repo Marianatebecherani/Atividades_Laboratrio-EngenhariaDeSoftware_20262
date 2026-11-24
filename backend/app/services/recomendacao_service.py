@@ -1,3 +1,5 @@
+from time import perf_counter
+
 from sqlalchemy.orm import Session
 
 from app.models import StatusLista
@@ -41,6 +43,7 @@ class RecomendacaoService:
         estrategia: NomeEstrategia = NomeEstrategia.PERFIL,
         limite: int = 10,
     ) -> RecomendacoesTmdbResposta:
+        inicio = perf_counter()
         contexto = self._montar_contexto(usuario_id, limite)
         recomendacoes = await self.estrategias[estrategia].recomendar(contexto)
 
@@ -53,7 +56,12 @@ class RecomendacaoService:
             FilmeRecomendadoResposta(**item.filme.model_dump(), motivo=item.motivo)
             for item in recomendacoes
         ]
-        return RecomendacoesTmdbResposta(estrategia=estrategia, itens=itens, total=len(itens))
+        return RecomendacoesTmdbResposta(
+            estrategia=estrategia,
+            itens=itens,
+            total=len(itens),
+            tempo_ms=round((perf_counter() - inicio) * 1000),
+        )
 
     def _montar_contexto(self, usuario_id: int, limite: int) -> ContextoRecomendacao:
         notas: dict[int, int] = {

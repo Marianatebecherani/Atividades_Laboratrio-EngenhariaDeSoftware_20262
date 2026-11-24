@@ -35,7 +35,8 @@ TmdbIdPath = Annotated[int, Path(gt=0)]
         "usuário avaliou bem; `similares` usa as recomendações do TMDb para os filmes com "
         "nota 4 ou 5; `populares` traz os filmes populares do TMDb. Filmes avaliados ou "
         "já assistidos não são recomendados. Quando a estratégia escolhida não encontra "
-        "filmes, a resposta usa `populares` e informa isso no campo `estrategia`."
+        "filmes, a resposta usa `populares` e informa isso no campo `estrategia`. O campo "
+        "`tempo_ms` informa quanto tempo o cálculo levou."
     ),
     responses=RESPOSTA_401,
 )

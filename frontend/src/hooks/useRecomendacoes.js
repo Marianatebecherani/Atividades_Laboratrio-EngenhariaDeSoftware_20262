@@ -11,6 +11,7 @@ export function useRecomendacoes(token, estrategia) {
   const [estado, setEstado] = useState({
     filmes: [],
     estrategiaUsada: null,
+    tempoMs: null,
     carregando: Boolean(token),
     erro: "",
   });
@@ -35,13 +36,20 @@ export function useRecomendacoes(token, estrategia) {
           setEstado({
             filmes: resposta.itens || [],
             estrategiaUsada: resposta.estrategia,
+            tempoMs: resposta.tempo_ms ?? null,
             carregando: false,
             erro: "",
           });
         }
       } catch (error) {
         if (ativo) {
-          setEstado({ filmes: [], estrategiaUsada: null, carregando: false, erro: error.message });
+          setEstado({
+            filmes: [],
+            estrategiaUsada: null,
+            tempoMs: null,
+            carregando: false,
+            erro: error.message,
+          });
         }
       }
     }

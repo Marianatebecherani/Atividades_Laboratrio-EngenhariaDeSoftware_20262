@@ -34,10 +34,8 @@ function nota(valor) {
 function Recomendacoes({ token, usuario }) {
   const [estrategia, setEstrategia] = useState("perfil");
   const [detalhe, setDetalhe] = useState(null);
-  const { filmes, estrategiaUsada, carregando, erro, tentarNovamente } = useRecomendacoes(
-    token,
-    estrategia,
-  );
+  const { filmes, estrategiaUsada, tempoMs, carregando, erro, tentarNovamente } =
+    useRecomendacoes(token, estrategia);
 
   const escolhida = ESTRATEGIAS.find((item) => item.valor === estrategia);
   const usouReserva =
@@ -148,6 +146,10 @@ function Recomendacoes({ token, usuario }) {
             ))}
           </div>
         </div>
+      )}
+
+      {!detalhe && !carregando && !erro && filmes.length > 0 && tempoMs !== null && (
+        <p className="tmdb-recomendacao-tempo">Calculado em {tempoMs} ms</p>
       )}
 
       <p className="tmdb-attribution">
