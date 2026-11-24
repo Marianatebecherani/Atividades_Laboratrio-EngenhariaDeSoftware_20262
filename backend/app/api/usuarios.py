@@ -4,6 +4,7 @@ from fastapi import APIRouter, Path, Query, status
 
 from app.api.dependencias import (
     FilmesUsuarioServiceDep,
+    PerfilRecomendacaoServiceDep,
     UsuarioAtualDep,
     UsuarioServiceDep,
 )
@@ -14,6 +15,7 @@ from app.schemas.tmdb import (
     EstadoFilmeTmdbResposta,
     PaginaEstadoFilmesTmdbResposta,
     PaginaFavoritosTmdbResposta,
+    RecomendacoesTmdbResposta,
 )
 from app.schemas.usuario import UsuarioAtualizacao, UsuarioExclusao, UsuarioResposta
 
@@ -22,6 +24,18 @@ router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 RESPOSTA_401 = {401: {"description": "Token ausente, inválido ou expirado"}}
 TmdbIdPath = Annotated[int, Path(gt=0)]
 
+@router.get(
+    "/me/recomendacoes",
+    response_model=RecomendacoesTmdbResposta,
+    summary="Recomenda filmes com base nas avaliações pessoais do usuário",
+    responses=RESPOSTA_401,
+)
+async def recomendar_filmes(
+    usuario: UsuarioAtualDep,
+    servico: PerfilRecomendacaoServiceDep,
+    limite: Annotated[int, Query(ge=1, le=50)] = 10,
+) -> RecomendacoesTmdbResposta:
+    return await servico.recomendar(usuario.id, limite)
 
 @router.get("/me", summary="Retorna o usuário autenticado", responses=RESPOSTA_401)
 def obter_perfil(usuario: UsuarioAtualDep) -> UsuarioResposta:

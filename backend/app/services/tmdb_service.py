@@ -67,6 +67,8 @@ class TmdbService:
             "page": filtros.page,
             "sort_by": filtros.sort_by,
         }
+        if filtros.origin_country:
+            params["with_origin_country"] = filtros.origin_country
         genre_ids = filtros.genero_ids_efetivos
         if genre_ids:
             separador = "," if filtros.genre_operator == "AND" else "|"
@@ -207,6 +209,11 @@ class TmdbService:
                 "quantidade_votos": dados.get("vote_count", 0),
                 "popularidade": dados.get("popularity"),
                 "genero_ids": genero_ids,
+                "paises_producao": [
+                    pais["iso_3166_1"]
+                    for pais in dados.get("production_countries", [])
+                    if pais.get("iso_3166_1")
+                ],
                 "poster_url": TmdbService._url_imagem(poster_path, "w500"),
                 "backdrop_url": TmdbService._url_imagem(backdrop_path, "w780"),
                 "elenco": elenco,
