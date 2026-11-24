@@ -4,10 +4,11 @@ from fastapi import APIRouter, Path, Query, status
 
 from app.api.dependencias import (
     FilmesUsuarioServiceDep,
-    PerfilRecomendacaoServiceDep,
+    RecomendacaoServiceDep,
     UsuarioAtualDep,
     UsuarioServiceDep,
 )
+from app.models.enums import NomeEstrategia
 from app.schemas.item_lista import ItemListaEntrada
 from app.schemas.paginacao import Paginacao
 from app.schemas.tmdb import (
@@ -24,18 +25,30 @@ router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 RESPOSTA_401 = {401: {"description": "Token ausente, inválido ou expirado"}}
 TmdbIdPath = Annotated[int, Path(gt=0)]
 
+
 @router.get(
     "/me/recomendacoes",
     response_model=RecomendacoesTmdbResposta,
-    summary="Recomenda filmes com base nas avaliações pessoais do usuário",
+    summary="Recomenda filmes ao usuário com a estratégia escolhida",
+    description=(
+        "Estratégias (padrão Strategy): `perfil` usa os gêneros e países dos filmes que o "
+        "usuário avaliou bem; `similares` usa as recomendações do TMDb para os filmes com "
+        "nota 4 ou 5; `populares` traz os filmes populares do TMDb. Filmes avaliados ou "
+        "já assistidos não são recomendados. Quando a estratégia escolhida não encontra "
+        "filmes, a resposta usa `populares` e informa isso no campo `estrategia`."
+    ),
     responses=RESPOSTA_401,
 )
 async def recomendar_filmes(
     usuario: UsuarioAtualDep,
-    servico: PerfilRecomendacaoServiceDep,
+    servico: RecomendacaoServiceDep,
+    estrategia: Annotated[
+        NomeEstrategia, Query(description="Critério usado para recomendar")
+    ] = NomeEstrategia.PERFIL,
     limite: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> RecomendacoesTmdbResposta:
-    return await servico.recomendar(usuario.id, limite)
+    return await servico.recomendar(usuario.id, estrategia=estrategia, limite=limite)
+
 
 @router.get("/me", summary="Retorna o usuário autenticado", responses=RESPOSTA_401)
 def obter_perfil(usuario: UsuarioAtualDep) -> UsuarioResposta:

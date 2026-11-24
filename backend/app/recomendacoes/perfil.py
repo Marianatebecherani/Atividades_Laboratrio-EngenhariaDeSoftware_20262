@@ -1,64 +1,24 @@
-
-from sqlalchemy.orm import Session
-
-from app.models import StatusLista
-from app.repositories.avaliacao_repository import AvaliacaoRepository
-from app.repositories.comentario_repository import ComentarioRepository
-from app.repositories.item_lista_repository import ItemListaRepository
-from app.schemas.tmdb import (
-    DescobrirFilmesParametros,
-    FilmeTmdbResposta,
-    RecomendacoesTmdbResposta,
-)
-from app.services.tmdb_service import TmdbService
+from app.core.excecoes import ErroTmdb
+from app.models.enums import NomeEstrategia
+from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao, Recomendacao
+from app.schemas.tmdb import DescobrirFilmesParametros, FilmeTmdbResposta
 
 
-class PerfilRecomendacaoService:
-    """Gera recomendações a partir das avaliações pessoais do usuário."""
+class EstrategiaPerfil(EstrategiaRecomendacao):
+    """Recomenda filmes dos gêneros e países que o usuário avaliou melhor."""
+
+    nome = NomeEstrategia.PERFIL
 
     MAX_PAGINAS_DISCOVER = 10
     MAX_PAISES_PREFERIDOS = 3
 
-    def __init__(self, sessao: Session, tmdb: TmdbService) -> None:
-        self.avaliacoes = AvaliacaoRepository(sessao)
-        self.comentarios = ComentarioRepository(sessao)
-        self.lista = ItemListaRepository(sessao)
-        self.tmdb = tmdb
-
-    async def recomendar(
-        self,
-        usuario_id: int,
-        limite: int = 10,
-    ) -> RecomendacoesTmdbResposta:
-        notas: dict[int, int] = {
-            avaliacao.tmdb_id: avaliacao.nota
-            for avaliacao in self.avaliacoes.listar_tmdb(usuario_id)
-        }
-
-        # O comentário público mais recente prevalece sobre a avaliação privada.
-        comentarios_processados: set[int] = set()
-
-        for comentario in self.comentarios.listar_por_usuario(usuario_id):
-            if comentario.tmdb_id in comentarios_processados:
-                continue
-
-            comentarios_processados.add(comentario.tmdb_id)
-
-            if comentario.nota is not None:
-                notas[comentario.tmdb_id] = comentario.nota
+    async def recomendar(self, contexto: ContextoRecomendacao) -> list[Recomendacao]:
+        notas = contexto.notas
+        filmes_excluidos = contexto.filmes_excluidos
+        limite = contexto.limite
 
         if not notas:
-            return RecomendacoesTmdbResposta(itens=[], total=0)
-
-        filmes_excluidos = set(notas)
-
-        filmes_assistidos = {
-            item.tmdb_id
-            for item in self.lista.listar_tmdb(usuario_id)
-            if item.status == StatusLista.ASSISTIDO
-        }
-
-        filmes_excluidos.update(filmes_assistidos)
+            return []
 
         pontuacao_generos: dict[int, int] = {}
         frequencia_generos: dict[int, int] = {}
@@ -73,22 +33,14 @@ class PerfilRecomendacaoService:
             peso = nota - 3
 
             for genero_id in set(filme.genero_ids):
-                pontuacao_generos[genero_id] = (
-                    pontuacao_generos.get(genero_id, 0) + peso
-                )
+                pontuacao_generos[genero_id] = pontuacao_generos.get(genero_id, 0) + peso
 
-                frequencia_generos[genero_id] = (
-                    frequencia_generos.get(genero_id, 0) + 1
-                )
+                frequencia_generos[genero_id] = frequencia_generos.get(genero_id, 0) + 1
 
             for pais in set(filme.paises_producao):
-                pontuacao_paises[pais] = (
-                    pontuacao_paises.get(pais, 0) + peso
-                )
+                pontuacao_paises[pais] = pontuacao_paises.get(pais, 0) + peso
 
-                frequencia_paises[pais] = (
-                    frequencia_paises.get(pais, 0) + 1
-                )
+                frequencia_paises[pais] = frequencia_paises.get(pais, 0) + 1
 
         # Calcula afinidade positiva para cada gênero.
         afinidade_generos: dict[int, float] = {}
@@ -97,9 +49,7 @@ class PerfilRecomendacaoService:
             frequencia = frequencia_generos[genero_id]
 
             if pontuacao > 0 and frequencia > 0:
-                afinidade_generos[genero_id] = (
-                    frequencia + (pontuacao / frequencia / 2)
-                )
+                afinidade_generos[genero_id] = frequencia + (pontuacao / frequencia / 2)
 
         # Calcula afinidade positiva para cada país.
         afinidade_paises: dict[str, float] = {}
@@ -108,9 +58,7 @@ class PerfilRecomendacaoService:
             frequencia = frequencia_paises[pais]
 
             if pontuacao > 0 and frequencia > 0:
-                afinidade_paises[pais] = (
-                    frequencia + (pontuacao / frequencia / 2)
-                )
+                afinidade_paises[pais] = frequencia + (pontuacao / frequencia / 2)
 
         generos_preferidos = sorted(
             afinidade_generos,
@@ -126,7 +74,7 @@ class PerfilRecomendacaoService:
 
         # Sem afinidade positiva em gênero ou país, não há perfil útil.
         if not generos_preferidos and not paises_preferidos:
-            return RecomendacoesTmdbResposta(itens=[], total=0)
+            return []
 
         candidatos: dict[int, FilmeTmdbResposta] = {}
 
@@ -152,9 +100,7 @@ class PerfilRecomendacaoService:
                     candidatos[filme.tmdb_id] = filme
 
                     if pais:
-                        paises_dos_candidatos.setdefault(
-                            filme.tmdb_id, set()
-                        ).add(pais)
+                        paises_dos_candidatos.setdefault(filme.tmdb_id, set()).add(pais)
 
                 if (
                     len(candidatos) >= limite * 5
@@ -177,15 +123,12 @@ class PerfilRecomendacaoService:
         # Ordena combinando afinidade de gênero e país.
         def pontuar_filme(filme: FilmeTmdbResposta) -> tuple[float, float, float]:
             pontuacao_genero = sum(
-                afinidade_generos.get(genero_id, 0)
-                for genero_id in set(filme.genero_ids)
+                afinidade_generos.get(genero_id, 0) for genero_id in set(filme.genero_ids)
             )
 
             pontuacao_pais = sum(
                 afinidade_paises.get(pais, 0)
-                for pais in paises_dos_candidatos.get(
-                    filme.tmdb_id, set()
-                )
+                for pais in paises_dos_candidatos.get(filme.tmdb_id, set())
             )
 
             return (
@@ -194,13 +137,46 @@ class PerfilRecomendacaoService:
                 filme.nota_tmdb or 0,
             )
 
-        recomendacoes = sorted(
+        recomendados = sorted(
             candidatos.values(),
             key=pontuar_filme,
             reverse=True,
         )[:limite]
 
-        return RecomendacoesTmdbResposta(
-            itens=recomendacoes,
-            total=len(recomendacoes),
-        )
+        nomes_generos = await self._nomes_dos_generos() if recomendados else {}
+
+        return [
+            Recomendacao(
+                filme=filme,
+                motivo=self._motivo(
+                    filme, generos_preferidos, nomes_generos, paises_dos_candidatos
+                ),
+            )
+            for filme in recomendados
+        ]
+
+    async def _nomes_dos_generos(self) -> dict[int, str]:
+        # Os nomes só enriquecem o motivo; sem eles, a recomendação continua válida.
+        try:
+            return {genero.id: genero.nome for genero in await self.tmdb.listar_generos()}
+        except ErroTmdb:
+            return {}
+
+    @staticmethod
+    def _motivo(
+        filme: FilmeTmdbResposta,
+        generos_preferidos: list[int],
+        nomes_generos: dict[int, str],
+        paises_dos_candidatos: dict[int, set[str]],
+    ) -> str:
+        generos_do_filme = set(filme.genero_ids)
+        generos_em_comum = [g for g in generos_preferidos if g in generos_do_filme]
+        nomes = [nomes_generos[g] for g in generos_em_comum if g in nomes_generos][:2]
+
+        if nomes:
+            return f"Porque você gosta de {' e '.join(nomes)}"
+        if generos_em_comum:
+            return "Combina com os gêneros que você avalia bem"
+        if filme.tmdb_id in paises_dos_candidatos:
+            return "Do mesmo país de filmes que você avaliou bem"
+        return "Combina com as suas avaliações"

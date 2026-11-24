@@ -114,6 +114,23 @@ class TmdbService:
         except (KeyError, TypeError, ValidationError) as erro:
             raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.") from erro
 
+    async def listar_recomendacoes_do_filme(
+        self, tmdb_id: int
+    ) -> tuple[FilmeTmdbResposta, list[FilmeTmdbResposta]]:
+        """Retorna o filme e as recomendações do TMDb para ele, em uma única consulta."""
+        dados = await self._get(
+            f"/movie/{tmdb_id}",
+            params={"language": IDIOMA, "append_to_response": "recommendations"},
+        )
+        try:
+            recomendados = (dados.get("recommendations") or {}).get("results") or []
+            return (
+                self._mapear_filme(dados),
+                [self._mapear_filme(item) for item in recomendados],
+            )
+        except (AttributeError, KeyError, TypeError, ValidationError) as erro:
+            raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.") from erro
+
     async def _get(self, caminho: str, params: dict[str, str | int | float]) -> dict[str, Any]:
         if self._token is None or not self._token.get_secret_value().strip():
             raise ErroTmdb(503, "A integração com o TMDb não está configurada no servidor.")

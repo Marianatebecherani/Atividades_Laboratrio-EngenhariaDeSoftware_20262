@@ -1,4 +1,3 @@
-
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
@@ -11,7 +10,7 @@ from app.db.sessao import obter_sessao
 from app.models import PapelUsuario, Usuario
 from app.services.comentario_service import ComentarioService
 from app.services.filmes_usuario_service import FilmesUsuarioService
-from app.services.perfil_recomendacao_service import PerfilRecomendacaoService
+from app.services.recomendacao_service import RecomendacaoService
 from app.services.tmdb_service import TmdbService
 from app.services.usuario_service import UsuarioService
 
@@ -90,14 +89,14 @@ TmdbServiceDep = Annotated[
 ]
 
 
-def obter_perfil_recomendacao_service(
+def obter_recomendacao_service(
     sessao: Annotated[Session, Depends(obter_sessao)],
     tmdb: Annotated[TmdbService, Depends(obter_tmdb_service)],
-) -> PerfilRecomendacaoService:
-    return PerfilRecomendacaoService(sessao, tmdb)
+) -> RecomendacaoService:
+    return RecomendacaoService(sessao, tmdb)
 
 
-PerfilRecomendacaoServiceDep = Annotated[
-    PerfilRecomendacaoService,
-    Depends(obter_perfil_recomendacao_service),
+RecomendacaoServiceDep = Annotated[
+    RecomendacaoService,
+    Depends(obter_recomendacao_service),
 ]

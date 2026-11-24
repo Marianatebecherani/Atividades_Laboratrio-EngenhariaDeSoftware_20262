@@ -85,6 +85,7 @@ Todas as rotas usam o prefixo `/api/v1`.
 | `PUT`, `DELETE` | `/usuarios/me/filmes/{tmdb_id}/lista` | Token | Define ou remove status pessoal. |
 | `PUT`, `DELETE` | `/usuarios/me/filmes/{tmdb_id}/avaliacao` | Token | Salva ou remove nota pessoal e comentário. |
 | `GET` | `/usuarios/me/favoritos` | Token | Lista IDs TMDb favoritados. |
+| `GET` | `/usuarios/me/recomendacoes?estrategia=perfil&limite=10` | Token | Recomenda filmes com a estratégia escolhida (`perfil`, `similares` ou `populares`). |
 | `POST`, `DELETE` | `/filmes/{tmdb_id}/favoritar` | Token | Adiciona ou remove favorito. |
 | `DELETE` | `/avaliacoes/{id}` | Admin | Modera uma avaliação pessoal. |
 | `GET` | `/filmes/{tmdb_id}/comentarios?pagina=1&tamanho=20` | — | Lista comentários públicos de um filme, mais recentes primeiro. |
@@ -98,6 +99,41 @@ Nas rotas autenticadas, envie `Authorization: Bearer <token>`. O endpoint `/film
 A lista, as avaliações e os favoritos guardam apenas o `tmdb_id` e os dados pessoais do usuário. A nota pessoal (1 a 5) é independente da nota pública do TMDb.
 
 Este produto usa a API TMDb, mas não é endossado nem certificado pelo TMDb.
+
+## Recomendações (padrão Strategy)
+
+O motor de recomendações fica em [app/recomendacoes/](app/recomendacoes/). Cada estratégia implementa a interface `EstrategiaRecomendacao` ([base.py](app/recomendacoes/base.py)). O `RecomendacaoService` ([recomendacao_service.py](app/services/recomendacao_service.py)) monta o contexto do usuário (notas e filmes a excluir) e escolhe a estratégia pelo parâmetro `estrategia`.
+
+| Estratégia | Critério | Exemplo de motivo |
+| --- | --- | --- |
+| `perfil` (padrão) | Gêneros e países com maior afinidade nas avaliações do usuário. Cada avaliação vale `nota − 3`, e a nota do comentário público mais recente prevalece sobre a avaliação privada. | "Porque você gosta de Ação e Drama" |
+| `similares` | Recomendações do TMDb para os 3 filmes mais bem avaliados (nota 4 ou 5). Filmes indicados por mais de uma base sobem na lista. | "Parecido com Interestelar" |
+| `populares` | Filmes populares do TMDb. Não depende do histórico do usuário. | "Em alta no TMDb" |
+
+Regras comuns:
+
+- Filmes avaliados ou marcados como assistidos não são recomendados.
+- Quando a estratégia escolhida não encontra filmes (por exemplo, para um usuário sem avaliações), a API usa `populares`. O campo `estrategia` da resposta informa a estratégia efetivamente usada.
+- Cada item traz os dados do filme e o `motivo` da recomendação.
+
+Exemplo de resposta, com os campos do filme resumidos:
+
+```json
+{
+  "estrategia": "similares",
+  "itens": [
+    {
+      "tmdb_id": 75612,
+      "titulo": "Oblivion",
+      "nota_tmdb": 6.7,
+      "motivo": "Parecido com Interestelar"
+    }
+  ],
+  "total": 1
+}
+```
+
+Para criar uma estratégia, adicione o nome em `NomeEstrategia` ([enums.py](app/models/enums.py)), crie uma classe que herde de `EstrategiaRecomendacao` e registre-a no `RecomendacaoService`.
 
 ## Testes e qualidade
 
