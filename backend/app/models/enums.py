@@ -16,3 +16,5 @@ class NomeEstrategia(StrEnum):
     """Estratégias do motor de recomendações (não é gravado no banco)."""
 
     PERFIL = "perfil"
+    SIMILARES = "similares"
+    POPULARES = "populares"

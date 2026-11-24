@@ -2,7 +2,13 @@ from sqlalchemy.orm import Session
 
 from app.models import StatusLista
 from app.models.enums import NomeEstrategia
-from app.recomendacoes import ContextoRecomendacao, EstrategiaPerfil, EstrategiaRecomendacao
+from app.recomendacoes import (
+    ContextoRecomendacao,
+    EstrategiaPerfil,
+    EstrategiaPopulares,
+    EstrategiaRecomendacao,
+    EstrategiaSimilares,
+)
 from app.repositories.avaliacao_repository import AvaliacaoRepository
 from app.repositories.comentario_repository import ComentarioRepository
 from app.repositories.item_lista_repository import ItemListaRepository
@@ -18,18 +24,24 @@ class RecomendacaoService:
         self.comentarios = ComentarioRepository(sessao)
         self.lista = ItemListaRepository(sessao)
         self.estrategias: dict[NomeEstrategia, EstrategiaRecomendacao] = {
-            estrategia.nome: estrategia for estrategia in (EstrategiaPerfil(tmdb),)
+            estrategia.nome: estrategia
+            for estrategia in (
+                EstrategiaPerfil(tmdb),
+                EstrategiaSimilares(tmdb),
+                EstrategiaPopulares(tmdb),
+            )
         }
 
     async def recomendar(
         self,
         usuario_id: int,
+        estrategia: NomeEstrategia = NomeEstrategia.PERFIL,
         limite: int = 10,
     ) -> RecomendacoesTmdbResposta:
         contexto = self._montar_contexto(usuario_id, limite)
-        filmes = await self.estrategias[NomeEstrategia.PERFIL].recomendar(contexto)
+        filmes = await self.estrategias[estrategia].recomendar(contexto)
 
-        return RecomendacoesTmdbResposta(itens=filmes, total=len(filmes))
+        return RecomendacoesTmdbResposta(estrategia=estrategia, itens=filmes, total=len(filmes))
 
     def _montar_contexto(self, usuario_id: int, limite: int) -> ContextoRecomendacao:
         notas: dict[int, int] = {

@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.enums import StatusLista
+from app.models.enums import NomeEstrategia, StatusLista
 
 
 class GeneroTmdbResposta(BaseModel):
@@ -189,9 +189,10 @@ class PaginaEstadoFilmesTmdbResposta(BaseModel):
 
 
 class RecomendacoesTmdbResposta(BaseModel):
-    """Filmes recomendados a partir do perfil pessoal do usuário."""
+    """Filmes recomendados ao usuário e a estratégia que os gerou."""
 
     model_config = ConfigDict(extra="forbid")
 
+    estrategia: NomeEstrategia
     itens: list[FilmeTmdbResposta] = Field(default_factory=list)
     total: int = Field(ge=0)

@@ -8,6 +8,7 @@ from app.api.dependencias import (
     UsuarioAtualDep,
     UsuarioServiceDep,
 )
+from app.models.enums import NomeEstrategia
 from app.schemas.item_lista import ItemListaEntrada
 from app.schemas.paginacao import Paginacao
 from app.schemas.tmdb import (
@@ -28,15 +29,24 @@ TmdbIdPath = Annotated[int, Path(gt=0)]
 @router.get(
     "/me/recomendacoes",
     response_model=RecomendacoesTmdbResposta,
-    summary="Recomenda filmes com base nas avaliações pessoais do usuário",
+    summary="Recomenda filmes ao usuário com a estratégia escolhida",
+    description=(
+        "Estratégias (padrão Strategy): `perfil` usa os gêneros e países dos filmes que o "
+        "usuário avaliou bem; `similares` usa as recomendações do TMDb para os filmes com "
+        "nota 4 ou 5; `populares` traz os filmes populares do TMDb. Filmes avaliados ou "
+        "já assistidos não são recomendados."
+    ),
     responses=RESPOSTA_401,
 )
 async def recomendar_filmes(
     usuario: UsuarioAtualDep,
     servico: RecomendacaoServiceDep,
+    estrategia: Annotated[
+        NomeEstrategia, Query(description="Critério usado para recomendar")
+    ] = NomeEstrategia.PERFIL,
     limite: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> RecomendacoesTmdbResposta:
-    return await servico.recomendar(usuario.id, limite)
+    return await servico.recomendar(usuario.id, estrategia=estrategia, limite=limite)
 
 
 @router.get("/me", summary="Retorna o usuário autenticado", responses=RESPOSTA_401)

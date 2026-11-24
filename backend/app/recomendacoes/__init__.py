@@ -2,5 +2,13 @@
 
 from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao
 from app.recomendacoes.perfil import EstrategiaPerfil
+from app.recomendacoes.populares import EstrategiaPopulares
+from app.recomendacoes.similares import EstrategiaSimilares
 
-__all__ = ["ContextoRecomendacao", "EstrategiaPerfil", "EstrategiaRecomendacao"]
+__all__ = [
+    "ContextoRecomendacao",
+    "EstrategiaPerfil",
+    "EstrategiaPopulares",
+    "EstrategiaRecomendacao",
+    "EstrategiaSimilares",
+]

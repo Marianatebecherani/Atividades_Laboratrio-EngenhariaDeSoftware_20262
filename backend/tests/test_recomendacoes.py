@@ -158,7 +158,7 @@ def test_usuario_sem_avaliacoes_recebe_lista_vazia(
     )
 
     assert resposta.status_code == 200
-    assert resposta.json() == {"itens": [], "total": 0}
+    assert resposta.json() == {"estrategia": "perfil", "itens": [], "total": 0}
 
 
 def test_recomendacoes_respeitam_limite(
