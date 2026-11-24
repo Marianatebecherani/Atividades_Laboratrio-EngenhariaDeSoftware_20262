@@ -1,3 +1,5 @@
+import asyncio
+import time
 from collections.abc import Iterator
 
 import httpx
@@ -7,6 +9,7 @@ from pydantic import SecretStr
 
 from app.api.dependencias import obter_tmdb_service
 from app.main import app
+from app.services.cache_tmdb import CacheTmdb
 from app.services.tmdb_service import TmdbService
 
 GENEROS_TMDB = [{"id": 28, "name": "Ação"}, {"id": 18, "name": "Drama"}]
@@ -388,3 +391,89 @@ def test_populares_excluem_filmes_avaliados_e_assistidos(
     assert corpo["estrategia"] == "populares"
     assert [item["tmdb_id"] for item in corpo["itens"]] == [102]
     assert corpo["itens"][0]["motivo"] == "Em alta no TMDb"
+
+
+# Latência de uma consulta ao TMDb real com a conexão reaproveitada (medida em 2026-11).
+LATENCIA_TMDB_SEGUNDOS = 0.15
+
+
+def configurar_tmdb_com_latencia(cache: CacheTmdb | None = None) -> list[httpx.Request]:
+    """Simula o TMDb com 150 ms por consulta e devolve a lista das consultas feitas."""
+    requisicoes: list[httpx.Request] = []
+
+    async def responder(requisicao: httpx.Request) -> httpx.Response:
+        requisicoes.append(requisicao)
+        await asyncio.sleep(LATENCIA_TMDB_SEGUNDOS)
+        caminho = requisicao.url.path
+
+        if caminho == "/3/genre/movie/list":
+            return httpx.Response(200, json={"genres": GENEROS_TMDB})
+
+        if caminho in ("/3/movie/popular", "/3/discover/movie"):
+            pagina = int(requisicao.url.params.get("page", "1"))
+            return httpx.Response(
+                200,
+                json={
+                    "page": pagina,
+                    "total_pages": 5,
+                    "total_results": 100,
+                    "results": [filme_discover(1000 * pagina + i, 28) for i in range(20)],
+                },
+            )
+
+        tmdb_id = int(caminho.split("/")[-1])
+        dados = filme_detalhado(tmdb_id, 28)
+        dados["production_countries"] = [{"iso_3166_1": "US", "name": "United States"}]
+        dados["recommendations"] = pagina_tmdb(
+            [filme_discover(10_000 + tmdb_id * 10 + i, 28) for i in range(10)]
+        )
+        return httpx.Response(200, json=dados)
+
+    app.dependency_overrides[obter_tmdb_service] = lambda: TmdbService(
+        SecretStr("token-de-teste"), httpx.MockTransport(responder), cache=cache
+    )
+    return requisicoes
+
+
+@pytest.mark.parametrize("estrategia", ["perfil", "similares", "populares"])
+def test_recomendacoes_levam_menos_de_800_ms_com_a_latencia_do_tmdb(
+    cliente: TestClient,
+    cabecalho_usuario: dict[str, str],
+    estrategia: str,
+) -> None:
+    for tmdb_id in range(100, 110):
+        avaliar(cliente, cabecalho_usuario, tmdb_id, 5 if tmdb_id % 2 else 4)
+    configurar_tmdb_com_latencia()
+
+    inicio = time.perf_counter()
+    resposta = cliente.get(
+        f"/api/v1/usuarios/me/recomendacoes?estrategia={estrategia}",
+        headers=cabecalho_usuario,
+    )
+    decorrido_ms = (time.perf_counter() - inicio) * 1000
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert corpo["estrategia"] == estrategia
+    assert corpo["total"] == 10
+    assert corpo["tempo_ms"] < 800
+    assert decorrido_ms < 800
+
+
+def test_segunda_recomendacao_vem_do_cache_sem_consultar_o_tmdb(
+    cliente: TestClient,
+    cabecalho_usuario: dict[str, str],
+) -> None:
+    for tmdb_id in range(100, 105):
+        avaliar(cliente, cabecalho_usuario, tmdb_id, 5)
+    requisicoes = configurar_tmdb_com_latencia(cache=CacheTmdb())
+
+    primeira = cliente.get("/api/v1/usuarios/me/recomendacoes", headers=cabecalho_usuario)
+    consultas_da_primeira = len(requisicoes)
+    segunda = cliente.get("/api/v1/usuarios/me/recomendacoes", headers=cabecalho_usuario)
+
+    assert primeira.status_code == segunda.status_code == 200
+    assert consultas_da_primeira > 0
+    assert len(requisicoes) == consultas_da_primeira
+    assert segunda.json()["itens"] == primeira.json()["itens"]
+    assert segunda.json()["tempo_ms"] < LATENCIA_TMDB_SEGUNDOS * 1000
