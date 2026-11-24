@@ -52,13 +52,46 @@ Aplicação para registrar filmes e séries assistidos, manter uma lista "Quero 
 | Banco de dados | PostgreSQL |
 | Frontend | React (Vite) |
 
-<p align="center">
-  <img
-    src="./docs/Arquitetura%20star%20film.png"
-    alt="Arquitetura do projeto Star Film"
-    width="900"
-  />
-</p>
+### Desenho da arquitetura
+
+<!-- Mesmo diagrama de docs/arquitetura.md: mantenha os dois iguais. -->
+
+```mermaid
+flowchart TB
+    usuario(["Usuário<br/>(navegador)"])
+
+    subgraph front["Frontend: React + Vite (frontend/)"]
+        paginas["Páginas<br/>Início, Busca e Minha Lista"]
+        componentes["Componentes e hooks<br/>(ex.: Recomendacoes, useRecomendacoes)"]
+        cliente_api["Cliente da API<br/>src/api.js"]
+        paginas --> componentes --> cliente_api
+    end
+
+    subgraph back["Backend: FastAPI (backend/)"]
+        rotas["Rotas REST /api/v1<br/>Swagger em /docs e autenticação JWT"]
+        servicos["Serviços<br/>regras de negócio"]
+        estrategias["Recomendações (Strategy)<br/>perfil, similares e populares"]
+        repositorios["Repositories<br/>SQLAlchemy 2"]
+        tmdb_service["Cliente do TMDb<br/>conexão compartilhada e cache"]
+        rotas --> servicos
+        rotas --> tmdb_service
+        servicos --> repositorios
+        servicos --> estrategias
+        estrategias --> tmdb_service
+    end
+
+    banco[("PostgreSQL 17 (Docker)<br/>usuários, lista, avaliações,<br/>comentários e favoritos")]
+    tmdb["TMDb API<br/>filmes, gêneros e recomendações"]
+    imagens["Imagens do TMDb<br/>image.tmdb.org"]
+
+    usuario --> paginas
+    cliente_api -- "HTTP/JSON<br/>(proxy do Vite em /api)" --> rotas
+    repositorios -- "SQL (psycopg 3)<br/>esquema via Alembic" --> banco
+    tmdb_service -- "HTTPS" --> tmdb
+    usuario -. "pôsteres" .-> imagens
+```
+
+Camadas do backend, fluxo de uma recomendação e portas usadas em desenvolvimento: [docs/arquitetura.md](docs/arquitetura.md).
 
 ## Requisitos
 
