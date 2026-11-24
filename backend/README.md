@@ -115,6 +115,7 @@ Regras comuns:
 - Filmes avaliados ou marcados como assistidos não são recomendados.
 - Quando a estratégia escolhida não encontra filmes (por exemplo, para um usuário sem avaliações), a API usa `populares`. O campo `estrategia` da resposta informa a estratégia efetivamente usada.
 - Cada item traz os dados do filme e o `motivo` da recomendação.
+- O campo `tempo_ms` informa quanto tempo o cálculo levou.
 
 Exemplo de resposta, com os campos do filme resumidos:
 
@@ -129,11 +130,34 @@ Exemplo de resposta, com os campos do filme resumidos:
       "motivo": "Parecido com Interestelar"
     }
   ],
-  "total": 1
+  "total": 1,
+  "tempo_ms": 145
 }
 ```
 
 Para criar uma estratégia, adicione o nome em `NomeEstrategia` ([enums.py](app/models/enums.py)), crie uma classe que herde de `EstrategiaRecomendacao` e registre-a no `RecomendacaoService`.
+
+### Desempenho (RNF3: menos de 800 ms)
+
+As recomendações dependem do TMDb, então o tempo de resposta vem principalmente das consultas externas. Para ficar abaixo de 800 ms:
+
+- **Conexão reaproveitada:** a API cria um único cliente HTTP para o TMDb ao iniciar (`ciclo_de_vida` em [main.py](app/main.py)). As conexões HTTPS continuam abertas por até 60 s sem uso, em vez de uma conexão nova a cada consulta.
+- **Consultas em paralelo:** a estratégia `perfil` busca ao mesmo tempo os detalhes de todos os filmes avaliados e, depois, as páginas de candidatos. O resultado é o mesmo da versão sequencial, inclusive na ordem.
+- **Cache em memória** ([cache_tmdb.py](app/services/cache_tmdb.py)): detalhes de filmes ficam guardados por 24 horas, e listas e buscas por 30 minutos. Do elenco, o cache guarda só o que a API exibe, o que dá cerca de 25 KB por filme, até 1.000 respostas. Ele contém apenas dados públicos do catálogo e é perdido quando a API reinicia.
+
+A tela inicial mostra o valor de `tempo_ms` abaixo das recomendações.
+
+Medições com o TMDb real, para um usuário com 10 filmes avaliados:
+
+| Estratégia | Antes | Primeira consulta | Consulta repetida (cache) |
+| --- | --- | --- | --- |
+| `perfil` | 4,5 a 6,6 s | 0,7 a 0,8 s (API recém-iniciada) | cerca de 5 ms |
+| `similares` | 0,9 a 1,6 s | cerca de 150 ms | cerca de 5 ms |
+| `populares` | 0,6 a 0,8 s | cerca de 150 ms | cerca de 5 ms |
+
+A consulta mais lenta é a primeira depois que a API inicia, porque é quando as conexões com o TMDb são abertas. O teste `test_recomendacoes_levam_menos_de_800_ms_com_a_latencia_do_tmdb` simula 150 ms por consulta ao TMDb, que é a latência medida com a conexão já aberta, e verifica as três estratégias.
+
+Em desenvolvimento, o React (StrictMode) faz cada requisição duas vezes. Por isso, a tela pode mostrar o tempo da segunda, que já encontra o cache preenchido.
 
 ## Testes e qualidade
 
