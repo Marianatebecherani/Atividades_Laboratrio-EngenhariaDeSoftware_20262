@@ -9,7 +9,7 @@ from app.api.dependencias import (
     UsuarioServiceDep,
 )
 from app.models.enums import NomeEstrategia
-from app.schemas.item_lista import ItemListaEntrada
+from app.schemas.item_lista import FiltroFilmesUsuario, ItemListaEntrada
 from app.schemas.paginacao import Paginacao
 from app.schemas.tmdb import (
     AvaliacaoTmdbEntrada,
@@ -107,14 +107,18 @@ def listar_favoritos(
     "/me/filmes",
     response_model=PaginaEstadoFilmesTmdbResposta,
     summary="Lista os IDs TMDb acompanhados pelo usuário",
+    description=(
+        "Use `status` para ver só os filmes da lista em uma situação: `quero_assistir`, "
+        "`assistindo` ou `assistido`. O `total` e a paginação consideram o filtro."
+    ),
     responses=RESPOSTA_401,
 )
 def listar_filmes_tmdb_usuario(
-    paginacao: Annotated[Paginacao, Query()],
+    filtros: Annotated[FiltroFilmesUsuario, Query()],
     usuario: UsuarioAtualDep,
     servico: FilmesUsuarioServiceDep,
 ) -> PaginaEstadoFilmesTmdbResposta:
-    return servico.listar_filmes(usuario.id, paginacao)
+    return servico.listar_filmes(usuario.id, filtros, status=filtros.status)
 
 
 @router.get(

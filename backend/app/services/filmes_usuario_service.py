@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.core.excecoes import RecursoNaoEncontrado
+from app.models import StatusLista
 from app.repositories.avaliacao_repository import AvaliacaoRepository
 from app.repositories.comentario_repository import ComentarioRepository
 from app.repositories.favorito_repository import FavoritoRepository
@@ -61,8 +62,13 @@ class FilmesUsuarioService:
         )
 
     def listar_filmes(
-        self, usuario_id: int, paginacao: Paginacao
+        self, usuario_id: int, paginacao: Paginacao, status: StatusLista | None = None
     ) -> PaginaEstadoFilmesTmdbResposta:
+        """Lista o estado pessoal dos filmes, do mais recente ao mais antigo.
+
+        Com `status`, mostra só os filmes da lista nessa situação. O filtro vem antes da
+        paginação, então `total` e as páginas consideram apenas os filmes filtrados.
+        """
         estados: dict[int, EstadoFilmeTmdbResposta] = {}
         for item in self.lista.listar_tmdb(usuario_id):
             estados[item.tmdb_id] = EstadoFilmeTmdbResposta(
@@ -108,6 +114,8 @@ class FilmesUsuarioService:
             key=lambda estado: estado.atualizado_em.timestamp() if estado.atualizado_em else 0,
             reverse=True,
         )
+        if status is not None:
+            itens = [estado for estado in itens if estado.status == status]
         total = len(itens)
         itens = itens[paginacao.deslocamento : paginacao.deslocamento + paginacao.tamanho]
         return PaginaEstadoFilmesTmdbResposta(
