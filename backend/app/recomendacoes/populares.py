@@ -1,5 +1,5 @@
 from app.models.enums import NomeEstrategia
-from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao
+from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao, Recomendacao
 from app.schemas.tmdb import FilmeTmdbResposta
 
 
@@ -12,8 +12,9 @@ class EstrategiaPopulares(EstrategiaRecomendacao):
     nome = NomeEstrategia.POPULARES
 
     MAX_PAGINAS = 3
+    MOTIVO = "Em alta no TMDb"
 
-    async def recomendar(self, contexto: ContextoRecomendacao) -> list[FilmeTmdbResposta]:
+    async def recomendar(self, contexto: ContextoRecomendacao) -> list[Recomendacao]:
         filmes: dict[int, FilmeTmdbResposta] = {}
 
         for pagina in range(1, self.MAX_PAGINAS + 1):
@@ -26,4 +27,7 @@ class EstrategiaPopulares(EstrategiaRecomendacao):
             if len(filmes) >= contexto.limite or pagina >= resultado.total_paginas:
                 break
 
-        return list(filmes.values())[: contexto.limite]
+        return [
+            Recomendacao(filme=filme, motivo=self.MOTIVO)
+            for filme in list(filmes.values())[: contexto.limite]
+        ]

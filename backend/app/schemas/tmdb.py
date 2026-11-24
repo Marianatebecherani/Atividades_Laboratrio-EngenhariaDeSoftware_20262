@@ -188,11 +188,15 @@ class PaginaEstadoFilmesTmdbResposta(BaseModel):
     tamanho: int = Field(ge=1)
 
 
+class FilmeRecomendadoResposta(FilmeTmdbResposta):
+    motivo: str = Field(description="Por que o filme foi recomendado ao usuário")
+
+
 class RecomendacoesTmdbResposta(BaseModel):
     """Filmes recomendados ao usuário e a estratégia que os gerou."""
 
     model_config = ConfigDict(extra="forbid")
 
     estrategia: NomeEstrategia
-    itens: list[FilmeTmdbResposta] = Field(default_factory=list)
+    itens: list[FilmeRecomendadoResposta] = Field(default_factory=list)
     total: int = Field(ge=0)

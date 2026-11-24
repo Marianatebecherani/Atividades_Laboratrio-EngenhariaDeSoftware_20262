@@ -1,5 +1,6 @@
+from app.core.excecoes import ErroTmdb
 from app.models.enums import NomeEstrategia
-from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao
+from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao, Recomendacao
 from app.schemas.tmdb import DescobrirFilmesParametros, FilmeTmdbResposta
 
 
@@ -11,7 +12,7 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
     MAX_PAGINAS_DISCOVER = 10
     MAX_PAISES_PREFERIDOS = 3
 
-    async def recomendar(self, contexto: ContextoRecomendacao) -> list[FilmeTmdbResposta]:
+    async def recomendar(self, contexto: ContextoRecomendacao) -> list[Recomendacao]:
         notas = contexto.notas
         filmes_excluidos = contexto.filmes_excluidos
         limite = contexto.limite
@@ -136,8 +137,46 @@ class EstrategiaPerfil(EstrategiaRecomendacao):
                 filme.nota_tmdb or 0,
             )
 
-        return sorted(
+        recomendados = sorted(
             candidatos.values(),
             key=pontuar_filme,
             reverse=True,
         )[:limite]
+
+        nomes_generos = await self._nomes_dos_generos() if recomendados else {}
+
+        return [
+            Recomendacao(
+                filme=filme,
+                motivo=self._motivo(
+                    filme, generos_preferidos, nomes_generos, paises_dos_candidatos
+                ),
+            )
+            for filme in recomendados
+        ]
+
+    async def _nomes_dos_generos(self) -> dict[int, str]:
+        # Os nomes só enriquecem o motivo; sem eles, a recomendação continua válida.
+        try:
+            return {genero.id: genero.nome for genero in await self.tmdb.listar_generos()}
+        except ErroTmdb:
+            return {}
+
+    @staticmethod
+    def _motivo(
+        filme: FilmeTmdbResposta,
+        generos_preferidos: list[int],
+        nomes_generos: dict[int, str],
+        paises_dos_candidatos: dict[int, set[str]],
+    ) -> str:
+        generos_do_filme = set(filme.genero_ids)
+        generos_em_comum = [g for g in generos_preferidos if g in generos_do_filme]
+        nomes = [nomes_generos[g] for g in generos_em_comum if g in nomes_generos][:2]
+
+        if nomes:
+            return f"Porque você gosta de {' e '.join(nomes)}"
+        if generos_em_comum:
+            return "Combina com os gêneros que você avalia bem"
+        if filme.tmdb_id in paises_dos_candidatos:
+            return "Do mesmo país de filmes que você avaliou bem"
+        return "Combina com as suas avaliações"

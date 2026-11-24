@@ -12,7 +12,7 @@ from app.recomendacoes import (
 from app.repositories.avaliacao_repository import AvaliacaoRepository
 from app.repositories.comentario_repository import ComentarioRepository
 from app.repositories.item_lista_repository import ItemListaRepository
-from app.schemas.tmdb import RecomendacoesTmdbResposta
+from app.schemas.tmdb import FilmeRecomendadoResposta, RecomendacoesTmdbResposta
 from app.services.tmdb_service import TmdbService
 
 
@@ -42,14 +42,18 @@ class RecomendacaoService:
         limite: int = 10,
     ) -> RecomendacoesTmdbResposta:
         contexto = self._montar_contexto(usuario_id, limite)
-        filmes = await self.estrategias[estrategia].recomendar(contexto)
+        recomendacoes = await self.estrategias[estrategia].recomendar(contexto)
 
         # Sem resultados (por exemplo, usuário sem avaliações), usa a estratégia de reserva.
-        if not filmes and estrategia != self.ESTRATEGIA_RESERVA:
+        if not recomendacoes and estrategia != self.ESTRATEGIA_RESERVA:
             estrategia = self.ESTRATEGIA_RESERVA
-            filmes = await self.estrategias[estrategia].recomendar(contexto)
+            recomendacoes = await self.estrategias[estrategia].recomendar(contexto)
 
-        return RecomendacoesTmdbResposta(estrategia=estrategia, itens=filmes, total=len(filmes))
+        itens = [
+            FilmeRecomendadoResposta(**item.filme.model_dump(), motivo=item.motivo)
+            for item in recomendacoes
+        ]
+        return RecomendacoesTmdbResposta(estrategia=estrategia, itens=itens, total=len(itens))
 
     def _montar_contexto(self, usuario_id: int, limite: int) -> ContextoRecomendacao:
         notas: dict[int, int] = {

@@ -28,6 +28,14 @@ class ContextoRecomendacao:
     limite: int
 
 
+@dataclass(frozen=True)
+class Recomendacao:
+    """Filme recomendado e o motivo, em linguagem simples, para exibir ao usuário."""
+
+    filme: FilmeTmdbResposta
+    motivo: str
+
+
 class EstrategiaRecomendacao(ABC):
     """Interface comum das estratégias de recomendação."""
 
@@ -37,5 +45,5 @@ class EstrategiaRecomendacao(ABC):
         self.tmdb = tmdb
 
     @abstractmethod
-    async def recomendar(self, contexto: ContextoRecomendacao) -> list[FilmeTmdbResposta]:
-        """Retorna até `contexto.limite` filmes, do mais para o menos relevante."""
+    async def recomendar(self, contexto: ContextoRecomendacao) -> list[Recomendacao]:
+        """Retorna até `contexto.limite` recomendações, da mais para a menos relevante."""
