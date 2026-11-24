@@ -187,6 +187,7 @@ class PaginaEstadoFilmesTmdbResposta(BaseModel):
     pagina: int = Field(ge=1)
     tamanho: int = Field(ge=1)
 
+
 class RecomendacoesTmdbResposta(BaseModel):
     """Filmes recomendados a partir do perfil pessoal do usuário."""
 
@@ -194,4 +195,3 @@ class RecomendacoesTmdbResposta(BaseModel):
 
     itens: list[FilmeTmdbResposta] = Field(default_factory=list)
     total: int = Field(ge=0)
-

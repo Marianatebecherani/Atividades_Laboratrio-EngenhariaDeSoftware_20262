@@ -1,4 +1,3 @@
-
 from sqlalchemy.orm import Session
 
 from app.models import StatusLista
@@ -73,22 +72,14 @@ class PerfilRecomendacaoService:
             peso = nota - 3
 
             for genero_id in set(filme.genero_ids):
-                pontuacao_generos[genero_id] = (
-                    pontuacao_generos.get(genero_id, 0) + peso
-                )
+                pontuacao_generos[genero_id] = pontuacao_generos.get(genero_id, 0) + peso
 
-                frequencia_generos[genero_id] = (
-                    frequencia_generos.get(genero_id, 0) + 1
-                )
+                frequencia_generos[genero_id] = frequencia_generos.get(genero_id, 0) + 1
 
             for pais in set(filme.paises_producao):
-                pontuacao_paises[pais] = (
-                    pontuacao_paises.get(pais, 0) + peso
-                )
+                pontuacao_paises[pais] = pontuacao_paises.get(pais, 0) + peso
 
-                frequencia_paises[pais] = (
-                    frequencia_paises.get(pais, 0) + 1
-                )
+                frequencia_paises[pais] = frequencia_paises.get(pais, 0) + 1
 
         # Calcula afinidade positiva para cada gênero.
         afinidade_generos: dict[int, float] = {}
@@ -97,9 +88,7 @@ class PerfilRecomendacaoService:
             frequencia = frequencia_generos[genero_id]
 
             if pontuacao > 0 and frequencia > 0:
-                afinidade_generos[genero_id] = (
-                    frequencia + (pontuacao / frequencia / 2)
-                )
+                afinidade_generos[genero_id] = frequencia + (pontuacao / frequencia / 2)
 
         # Calcula afinidade positiva para cada país.
         afinidade_paises: dict[str, float] = {}
@@ -108,9 +97,7 @@ class PerfilRecomendacaoService:
             frequencia = frequencia_paises[pais]
 
             if pontuacao > 0 and frequencia > 0:
-                afinidade_paises[pais] = (
-                    frequencia + (pontuacao / frequencia / 2)
-                )
+                afinidade_paises[pais] = frequencia + (pontuacao / frequencia / 2)
 
         generos_preferidos = sorted(
             afinidade_generos,
@@ -152,9 +139,7 @@ class PerfilRecomendacaoService:
                     candidatos[filme.tmdb_id] = filme
 
                     if pais:
-                        paises_dos_candidatos.setdefault(
-                            filme.tmdb_id, set()
-                        ).add(pais)
+                        paises_dos_candidatos.setdefault(filme.tmdb_id, set()).add(pais)
 
                 if (
                     len(candidatos) >= limite * 5
@@ -177,15 +162,12 @@ class PerfilRecomendacaoService:
         # Ordena combinando afinidade de gênero e país.
         def pontuar_filme(filme: FilmeTmdbResposta) -> tuple[float, float, float]:
             pontuacao_genero = sum(
-                afinidade_generos.get(genero_id, 0)
-                for genero_id in set(filme.genero_ids)
+                afinidade_generos.get(genero_id, 0) for genero_id in set(filme.genero_ids)
             )
 
             pontuacao_pais = sum(
                 afinidade_paises.get(pais, 0)
-                for pais in paises_dos_candidatos.get(
-                    filme.tmdb_id, set()
-                )
+                for pais in paises_dos_candidatos.get(filme.tmdb_id, set())
             )
 
             return (

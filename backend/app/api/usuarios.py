@@ -24,6 +24,7 @@ router = APIRouter(prefix="/usuarios", tags=["Usuários"])
 RESPOSTA_401 = {401: {"description": "Token ausente, inválido ou expirado"}}
 TmdbIdPath = Annotated[int, Path(gt=0)]
 
+
 @router.get(
     "/me/recomendacoes",
     response_model=RecomendacoesTmdbResposta,
@@ -36,6 +37,7 @@ async def recomendar_filmes(
     limite: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> RecomendacoesTmdbResposta:
     return await servico.recomendar(usuario.id, limite)
+
 
 @router.get("/me", summary="Retorna o usuário autenticado", responses=RESPOSTA_401)
 def obter_perfil(usuario: UsuarioAtualDep) -> UsuarioResposta:
