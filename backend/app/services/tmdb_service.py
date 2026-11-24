@@ -1,4 +1,5 @@
 import ssl
+from collections.abc import Callable
 from functools import cache
 from time import monotonic
 from typing import Any
@@ -25,6 +26,9 @@ CACHE_GENEROS_SEGUNDOS = 6 * 60 * 60
 # Validade das respostas no cache: dados de um filme mudam pouco; listas e buscas, mais.
 VALIDADE_FILME_SEGUNDOS = 24 * 60 * 60
 VALIDADE_BUSCA_SEGUNDOS = 30 * 60
+# Pessoas exibidas em cada filme: as primeiras do elenco e estas funções da equipe.
+MAX_PESSOAS = 20
+FUNCOES_EQUIPE = frozenset({"Director", "Screenplay", "Writer", "Producer"})
 # O padrão do httpx fecha conexões ociosas após 5 s. O TMDb as mantém abertas por mais
 # de 1 minuto (medido), então 60 s evita reabri-las entre uma interação e outra.
 LIMITES_CONEXOES = httpx.Limits(
@@ -154,6 +158,7 @@ class TmdbService:
             f"/movie/{tmdb_id}",
             params={"language": IDIOMA, "append_to_response": "credits"},
             validade_segundos=VALIDADE_FILME_SEGUNDOS,
+            reduzir=self._manter_creditos_usados,
         )
         try:
             return self._mapear_filme(dados)
@@ -183,8 +188,12 @@ class TmdbService:
         caminho: str,
         params: dict[str, str | int | float],
         validade_segundos: float | None = None,
+        reduzir: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        """Consulta o TMDb. Com `validade_segundos`, usa e alimenta o cache (se houver)."""
+        """Consulta o TMDb. Com `validade_segundos`, usa e alimenta o cache (se houver).
+
+        `reduzir` descarta da resposta o que a API não usa, antes de guardá-la no cache.
+        """
         if self._token is None or not self._token.get_secret_value().strip():
             raise ErroTmdb(503, "A integração com o TMDb não está configurada no servidor.")
 
@@ -229,11 +238,37 @@ class TmdbService:
             raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.") from erro
         if not isinstance(dados, dict):
             raise ErroTmdb(502, "O TMDb retornou uma resposta inválida.")
+        if reduzir is not None:
+            dados = reduzir(dados)
 
         # Só respostas válidas entram no cache; erros são consultados de novo na próxima vez.
         if usar_cache:
             self._cache.guardar(chave, dados, validade_segundos)
         return dados
+
+    @staticmethod
+    def _manter_creditos_usados(dados: dict[str, Any]) -> dict[str, Any]:
+        """Mantém só o elenco e a equipe que `_mapear_filme` usa.
+
+        Com o elenco completo, um filme chega a ocupar mais de 600 KB de memória no cache.
+        """
+        creditos = dados.get("credits")
+        if not isinstance(creditos, dict):
+            return dados
+
+        elenco = creditos.get("cast")
+        equipe = creditos.get("crew")
+        return {
+            **dados,
+            "credits": {
+                "cast": elenco[:MAX_PESSOAS] if isinstance(elenco, list) else [],
+                "crew": [
+                    pessoa
+                    for pessoa in (equipe if isinstance(equipe, list) else [])
+                    if isinstance(pessoa, dict) and pessoa.get("job") in FUNCOES_EQUIPE
+                ],
+            },
+        }
 
     @staticmethod
     def _mapear_pagina(dados: dict[str, Any]) -> BuscaFilmesTmdbResposta:
@@ -261,7 +296,7 @@ class TmdbService:
                 personagem=pessoa.get("character"),
                 perfil_url=TmdbService._url_imagem(pessoa.get("profile_path"), "w185"),
             )
-            for pessoa in credits.get("cast", [])[:20]
+            for pessoa in credits.get("cast", [])[:MAX_PESSOAS]
         ]
         equipe_principal = [
             PessoaEquipeTmdbResposta(
@@ -272,8 +307,8 @@ class TmdbService:
                 perfil_url=TmdbService._url_imagem(pessoa.get("profile_path"), "w185"),
             )
             for pessoa in credits.get("crew", [])
-            if pessoa.get("job") in {"Director", "Screenplay", "Writer", "Producer"}
-        ][:20]
+            if pessoa.get("job") in FUNCOES_EQUIPE
+        ][:MAX_PESSOAS]
         diretor = next(
             (pessoa.nome for pessoa in equipe_principal if pessoa.funcao == "Director"), None
         )

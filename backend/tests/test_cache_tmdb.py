@@ -79,6 +79,32 @@ def test_service_nao_guarda_erros_no_cache() -> None:
     assert asyncio.run(cenario()) == 603
 
 
+def test_cache_guarda_so_o_elenco_e_a_equipe_exibidos() -> None:
+    dados = filme(603)
+    dados["credits"] = {
+        "cast": [{"id": i, "name": f"Ator {i}"} for i in range(50)],
+        "crew": [
+            {"id": 900, "name": "Diretora", "job": "Director"},
+            {"id": 901, "name": "Figurinista", "job": "Costume Designer"},
+            {"id": 902, "name": "Roteirista", "job": "Screenplay"},
+        ],
+    }
+    cache = CacheTmdb()
+    servico = TmdbService(
+        TOKEN, httpx.MockTransport(lambda _: httpx.Response(200, json=dados)), cache=cache
+    )
+
+    resultado = asyncio.run(servico.obter_filme(603))
+    guardado = cache.obter(
+        ("/movie/603", (("append_to_response", "credits"), ("language", "pt-BR")))
+    )
+
+    assert len(guardado["credits"]["cast"]) == 20
+    assert [pessoa["job"] for pessoa in guardado["credits"]["crew"]] == ["Director", "Screenplay"]
+    assert len(resultado.elenco) == 20
+    assert resultado.diretor == "Diretora"
+
+
 def test_service_envia_o_token_pelo_cliente_compartilhado() -> None:
     requisicoes: list[httpx.Request] = []
 

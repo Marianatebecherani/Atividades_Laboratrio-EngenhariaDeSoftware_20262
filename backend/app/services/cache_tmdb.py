@@ -8,9 +8,10 @@ class CacheTmdb:
 
     Só guarda dados públicos do catálogo, nunca dados de usuários. Fica na memória do
     processo da API: é perdido quando ela reinicia e não é compartilhado entre processos.
+    Cada resposta ocupa cerca de 25 KB, então o limite padrão fica em torno de 25 MB.
     """
 
-    def __init__(self, max_itens: int = 2000) -> None:
+    def __init__(self, max_itens: int = 1000) -> None:
         self.max_itens = max_itens
         # Ordenado do item guardado há mais tempo para o mais recente.
         self._itens: dict[Hashable, tuple[float, dict[str, Any]]] = {}
