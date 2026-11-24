@@ -200,3 +200,4 @@ class RecomendacoesTmdbResposta(BaseModel):
     estrategia: NomeEstrategia
     itens: list[FilmeRecomendadoResposta] = Field(default_factory=list)
     total: int = Field(ge=0)
+    tempo_ms: int = Field(ge=0, description="Tempo de cálculo das recomendações, em milissegundos")
