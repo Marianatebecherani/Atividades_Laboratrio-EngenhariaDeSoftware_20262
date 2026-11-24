@@ -19,6 +19,9 @@ from app.services.tmdb_service import TmdbService
 class RecomendacaoService:
     """Monta o contexto do usuário e delega o cálculo à estratégia escolhida (Strategy)."""
 
+    # Não depende do histórico do usuário, por isso serve de reserva para as demais.
+    ESTRATEGIA_RESERVA = NomeEstrategia.POPULARES
+
     def __init__(self, sessao: Session, tmdb: TmdbService) -> None:
         self.avaliacoes = AvaliacaoRepository(sessao)
         self.comentarios = ComentarioRepository(sessao)
@@ -40,6 +43,11 @@ class RecomendacaoService:
     ) -> RecomendacoesTmdbResposta:
         contexto = self._montar_contexto(usuario_id, limite)
         filmes = await self.estrategias[estrategia].recomendar(contexto)
+
+        # Sem resultados (por exemplo, usuário sem avaliações), usa a estratégia de reserva.
+        if not filmes and estrategia != self.ESTRATEGIA_RESERVA:
+            estrategia = self.ESTRATEGIA_RESERVA
+            filmes = await self.estrategias[estrategia].recomendar(contexto)
 
         return RecomendacoesTmdbResposta(estrategia=estrategia, itens=filmes, total=len(filmes))
 

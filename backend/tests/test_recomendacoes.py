@@ -42,12 +42,25 @@ def filme_discover(tmdb_id: int, genero_id: int) -> dict:
     }
 
 
+def pagina_tmdb(resultados: list[dict]) -> dict:
+    return {
+        "page": 1,
+        "total_pages": 1,
+        "total_results": len(resultados),
+        "results": resultados,
+    }
+
+
 def configurar_tmdb(
     cliente: TestClient,
     filmes: dict[int, int],
     recomendacoes: list[dict],
+    populares: list[dict] | None = None,
 ) -> None:
     def responder(requisicao: httpx.Request) -> httpx.Response:
+        if requisicao.url.path == "/3/movie/popular":
+            return httpx.Response(200, json=pagina_tmdb(populares or []))
+
         if requisicao.url.path.startswith("/3/movie/"):
             tmdb_id = int(requisicao.url.path.split("/")[-1])
             genero_id = filmes[tmdb_id]
@@ -57,15 +70,7 @@ def configurar_tmdb(
             )
 
         if requisicao.url.path == "/3/discover/movie":
-            return httpx.Response(
-                200,
-                json={
-                    "page": 1,
-                    "total_pages": 1,
-                    "total_results": len(recomendacoes),
-                    "results": recomendacoes,
-                },
-            )
+            return httpx.Response(200, json=pagina_tmdb(recomendacoes))
 
         return httpx.Response(404)
 
@@ -148,17 +153,20 @@ def test_recomendacoes_excluem_filmes_assistidos(
     assert 200 in ids
 
 
-def test_usuario_sem_avaliacoes_recebe_lista_vazia(
+def test_usuario_sem_avaliacoes_recebe_filmes_populares(
     cliente: TestClient,
     cabecalho_usuario: dict[str, str],
 ) -> None:
+    configurar_tmdb(cliente, {}, [], populares=[filme_discover(400, 28)])
+
     resposta = cliente.get(
         "/api/v1/usuarios/me/recomendacoes",
         headers=cabecalho_usuario,
     )
 
     assert resposta.status_code == 200
-    assert resposta.json() == {"estrategia": "perfil", "itens": [], "total": 0}
+    assert resposta.json()["estrategia"] == "populares"
+    assert [item["tmdb_id"] for item in resposta.json()["itens"]] == [400]
 
 
 def test_recomendacoes_respeitam_limite(

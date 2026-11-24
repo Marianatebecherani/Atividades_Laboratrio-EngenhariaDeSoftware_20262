@@ -34,7 +34,8 @@ TmdbIdPath = Annotated[int, Path(gt=0)]
         "Estratégias (padrão Strategy): `perfil` usa os gêneros e países dos filmes que o "
         "usuário avaliou bem; `similares` usa as recomendações do TMDb para os filmes com "
         "nota 4 ou 5; `populares` traz os filmes populares do TMDb. Filmes avaliados ou "
-        "já assistidos não são recomendados."
+        "já assistidos não são recomendados. Quando a estratégia escolhida não encontra "
+        "filmes, a resposta usa `populares` e informa isso no campo `estrategia`."
     ),
     responses=RESPOSTA_401,
 )
