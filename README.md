@@ -83,6 +83,13 @@ Aplicação para registrar filmes e séries assistidos, manter uma lista "Quero 
 | [backend/](backend/README.md) | API REST, regras de negócio e acesso a dados. |
 | [frontend/](frontend/README.md) | Interface web em React. |
 
+## Padrões de projeto
+
+| Padrão | Onde | Uso |
+| --- | --- | --- |
+| Repository | [backend/app/repositories/](backend/app/repositories/) | Acesso aos dados de usuários, listas, avaliações, comentários e favoritos. |
+| Strategy | [backend/app/recomendacoes/](backend/app/recomendacoes/) | Motor de recomendações com as estratégias `perfil`, `similares` e `populares` ([detalhes](backend/README.md#recomendações-padrão-strategy)). |
+
 
 
 ## Execução
