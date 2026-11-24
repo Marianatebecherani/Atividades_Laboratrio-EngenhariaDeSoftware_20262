@@ -1,63 +1,23 @@
-from sqlalchemy.orm import Session
-
-from app.models import StatusLista
-from app.repositories.avaliacao_repository import AvaliacaoRepository
-from app.repositories.comentario_repository import ComentarioRepository
-from app.repositories.item_lista_repository import ItemListaRepository
-from app.schemas.tmdb import (
-    DescobrirFilmesParametros,
-    FilmeTmdbResposta,
-    RecomendacoesTmdbResposta,
-)
-from app.services.tmdb_service import TmdbService
+from app.models.enums import NomeEstrategia
+from app.recomendacoes.base import ContextoRecomendacao, EstrategiaRecomendacao
+from app.schemas.tmdb import DescobrirFilmesParametros, FilmeTmdbResposta
 
 
-class PerfilRecomendacaoService:
-    """Gera recomendações a partir das avaliações pessoais do usuário."""
+class EstrategiaPerfil(EstrategiaRecomendacao):
+    """Recomenda filmes dos gêneros e países que o usuário avaliou melhor."""
+
+    nome = NomeEstrategia.PERFIL
 
     MAX_PAGINAS_DISCOVER = 10
     MAX_PAISES_PREFERIDOS = 3
 
-    def __init__(self, sessao: Session, tmdb: TmdbService) -> None:
-        self.avaliacoes = AvaliacaoRepository(sessao)
-        self.comentarios = ComentarioRepository(sessao)
-        self.lista = ItemListaRepository(sessao)
-        self.tmdb = tmdb
-
-    async def recomendar(
-        self,
-        usuario_id: int,
-        limite: int = 10,
-    ) -> RecomendacoesTmdbResposta:
-        notas: dict[int, int] = {
-            avaliacao.tmdb_id: avaliacao.nota
-            for avaliacao in self.avaliacoes.listar_tmdb(usuario_id)
-        }
-
-        # O comentário público mais recente prevalece sobre a avaliação privada.
-        comentarios_processados: set[int] = set()
-
-        for comentario in self.comentarios.listar_por_usuario(usuario_id):
-            if comentario.tmdb_id in comentarios_processados:
-                continue
-
-            comentarios_processados.add(comentario.tmdb_id)
-
-            if comentario.nota is not None:
-                notas[comentario.tmdb_id] = comentario.nota
+    async def recomendar(self, contexto: ContextoRecomendacao) -> list[FilmeTmdbResposta]:
+        notas = contexto.notas
+        filmes_excluidos = contexto.filmes_excluidos
+        limite = contexto.limite
 
         if not notas:
-            return RecomendacoesTmdbResposta(itens=[], total=0)
-
-        filmes_excluidos = set(notas)
-
-        filmes_assistidos = {
-            item.tmdb_id
-            for item in self.lista.listar_tmdb(usuario_id)
-            if item.status == StatusLista.ASSISTIDO
-        }
-
-        filmes_excluidos.update(filmes_assistidos)
+            return []
 
         pontuacao_generos: dict[int, int] = {}
         frequencia_generos: dict[int, int] = {}
@@ -113,7 +73,7 @@ class PerfilRecomendacaoService:
 
         # Sem afinidade positiva em gênero ou país, não há perfil útil.
         if not generos_preferidos and not paises_preferidos:
-            return RecomendacoesTmdbResposta(itens=[], total=0)
+            return []
 
         candidatos: dict[int, FilmeTmdbResposta] = {}
 
@@ -176,13 +136,8 @@ class PerfilRecomendacaoService:
                 filme.nota_tmdb or 0,
             )
 
-        recomendacoes = sorted(
+        return sorted(
             candidatos.values(),
             key=pontuar_filme,
             reverse=True,
         )[:limite]
-
-        return RecomendacoesTmdbResposta(
-            itens=recomendacoes,
-            total=len(recomendacoes),
-        )

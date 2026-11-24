@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Query, status
 
 from app.api.dependencias import (
     FilmesUsuarioServiceDep,
-    PerfilRecomendacaoServiceDep,
+    RecomendacaoServiceDep,
     UsuarioAtualDep,
     UsuarioServiceDep,
 )
@@ -33,7 +33,7 @@ TmdbIdPath = Annotated[int, Path(gt=0)]
 )
 async def recomendar_filmes(
     usuario: UsuarioAtualDep,
-    servico: PerfilRecomendacaoServiceDep,
+    servico: RecomendacaoServiceDep,
     limite: Annotated[int, Query(ge=1, le=50)] = 10,
 ) -> RecomendacoesTmdbResposta:
     return await servico.recomendar(usuario.id, limite)
