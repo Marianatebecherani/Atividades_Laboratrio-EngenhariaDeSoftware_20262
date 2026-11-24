@@ -25,7 +25,11 @@ CACHE_GENEROS_SEGUNDOS = 6 * 60 * 60
 # Validade das respostas no cache: dados de um filme mudam pouco; listas e buscas, mais.
 VALIDADE_FILME_SEGUNDOS = 24 * 60 * 60
 VALIDADE_BUSCA_SEGUNDOS = 30 * 60
-LIMITES_CONEXOES = httpx.Limits(max_connections=20, max_keepalive_connections=20)
+# O padrão do httpx fecha conexões ociosas após 5 s. O TMDb as mantém abertas por mais
+# de 1 minuto (medido), então 60 s evita reabri-las entre uma interação e outra.
+LIMITES_CONEXOES = httpx.Limits(
+    max_connections=20, max_keepalive_connections=20, keepalive_expiry=60
+)
 
 
 @cache
