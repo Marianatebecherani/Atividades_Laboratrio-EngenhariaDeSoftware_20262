@@ -1,0 +1,1174 @@
+/* ================================================================
+   LANDING PAGE STYLES - CINEMATOGRAPHIC REDESIGN
+   Dark Cinematic Experience: Rosa #EC4899, Roxo #A855F7, Azul #60A5FA
+================================================================ */
+
+/* ================================================================
+   CONTAINER E LAYOUT BASE
+================================================================ */
+
+body {
+  overflow-y: auto;
+}
+
+.landing-page {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.landing-header {
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 8, 23, 0.95);
+  backdrop-filter: blur(15px);
+  position: relative;
+  z-index: 100;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.landing-header-container {
+  width: 100%;
+  max-width: 1400px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7%;
+}
+
+/* ================================================================
+   LOGO
+================================================================ */
+
+.landing-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  text-decoration: none;
+  color: white;
+}
+
+.landing-logo span span {
+  background: linear-gradient(90deg, #ec4899, #a855f7, #60a5fa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-logo-star {
+  color: #ec4899;
+  font-size: 28px;
+  filter: drop-shadow(0 0 10px rgba(236, 72, 153, 0.7));
+}
+
+/* ================================================================
+   NAVEGAÇÃO HEADER
+================================================================ */
+
+.landing-nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.landing-btn {
+  padding: 11px 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.landing-btn-login {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.landing-btn-login:hover {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.landing-btn-register {
+  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+  border: none;
+  color: white;
+  box-shadow: 0 5px 20px rgba(168, 85, 247, 0.3);
+}
+
+.landing-btn-register:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+}
+
+/* ================================================================
+   HERO WRAPPER (Hero + Carousel)
+================================================================ */
+
+.landing-hero-wrapper {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  overflow: hidden;
+}
+
+.landing-carousel-background {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #1a0033;
+  background-image: linear-gradient(135deg, rgba(236, 72, 153, 0.5) 0%, rgba(168, 85, 247, 0.5) 50%, rgba(96, 165, 250, 0.3) 100%);
+  z-index: 1;
+  opacity: 1;
+}
+
+.landing-hero-wrapper::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    rgba(8, 8, 23, 1) 0%, 
+    rgba(8, 8, 23, 0.8) 20%,
+    rgba(8, 8, 23, 0.5) 40%, 
+    rgba(8, 8, 23, 0.25) 60%, 
+    rgba(8, 8, 23, 0.05) 80%,
+    rgba(8, 8, 23, 0) 100%);
+  pointer-events: none;
+  z-index: 1;
+  display: block;
+}
+
+.landing-hero-wrapper > div:last-child {
+  position: absolute;
+  display: none;
+}
+
+/* ================================================================
+   HERO SECTION
+================================================================ */
+
+.landing-hero {
+  width: 50%;
+  min-height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  overflow: visible;
+  padding: 0;
+  height: 100%;
+  z-index: 3;
+}
+
+.landing-hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 80% 20%,
+    rgba(236, 72, 153, 0.15),
+    transparent 40%
+  ),
+  radial-gradient(
+    circle at 10% 70%,
+    rgba(168, 85, 247, 0.15),
+    transparent 40%
+  );
+  pointer-events: none;
+}
+
+.landing-hero-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  padding: 60px;
+  position: relative;
+  z-index: 3;
+  flex-direction: column;
+  height: 100%;
+}
+
+.landing-hero-content {
+  flex: 1;
+  max-width: 600px;
+  z-index: 2;
+}
+
+.landing-badge {
+  display: inline-block;
+  padding: 8px 15px;
+  margin-bottom: 25px;
+  border-radius: 30px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #d8b4fe;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.landing-hero-title {
+  margin: 0;
+  font-size: clamp(55px, 7vw, 88px);
+  line-height: 0.95;
+  letter-spacing: -5px;
+  font-weight: 900;
+  color: white;
+}
+
+.landing-hero-title span {
+  background: linear-gradient(90deg, #ec4899, #a855f7, #60a5fa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-hero-description {
+  color: #a9a9bd;
+  font-size: 17px;
+  line-height: 1.7;
+  max-width: 550px;
+  margin: 30px 0;
+}
+
+.landing-hero-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.landing-btn-primary,
+.landing-btn-secondary {
+  padding: 15px 25px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-btn-primary {
+  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+  border: none;
+  color: white;
+  box-shadow: 0 5px 20px rgba(168, 85, 247, 0.3);
+}
+
+.landing-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(236, 72, 153, 0.4);
+}
+
+.landing-btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ddd;
+}
+
+.landing-btn-secondary:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Visual removed - now uses auto-carousel on the right */
+
+.landing-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0;
+  display: none;
+}
+
+.landing-glow-pink {
+  background: #ec4899;
+  width: 300px;
+  height: 300px;
+  top: 50px;
+  right: 0;
+}
+
+.landing-glow-purple {
+  background: #a855f7;
+  width: 350px;
+  height: 350px;
+  bottom: 50px;
+  left: 100px;
+  opacity: 0.3;
+}
+
+.landing-glow-blue {
+  background: #60a5fa;
+  width: 250px;
+  height: 250px;
+  top: 100px;
+  right: 150px;
+  opacity: 0.25;
+}
+
+/* ================================================================
+   CAROUSEL SECTION
+================================================================ */
+
+.landing-carousel-section {
+  width: 100%;
+  padding: 100px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.landing-carousel-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 7%;
+}
+
+.landing-carousel-title {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 50px 0;
+  letter-spacing: -1px;
+}
+
+.landing-carousel-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.landing-carousel-track {
+  flex: 1;
+  overflow: hidden;
+}
+
+.landing-carousel-items {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+}
+
+.landing-carousel-item {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-carousel-item-side {
+  opacity: 0.6;
+  transform: scale(0.75);
+}
+
+.landing-carousel-item-center {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.landing-poster-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.landing-poster-wrapper:hover {
+  box-shadow: 0 30px 70px rgba(236, 72, 153, 0.3);
+  transform: translateY(-5px);
+}
+
+.landing-poster {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.landing-poster-wrapper-featured {
+  width: 280px;
+  height: 420px;
+}
+
+.landing-poster-featured {
+  width: 100%;
+  height: 100%;
+}
+
+.landing-carousel-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  color: white;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.landing-carousel-item-center:hover .landing-carousel-info {
+  transform: translateY(-10px);
+}
+
+.landing-carousel-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.landing-year {
+  color: #a9a9bd;
+  font-size: 12px;
+  margin: 0;
+}
+
+.landing-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+.landing-stars {
+  color: #fbbf24;
+  font-size: 16px;
+}
+
+.landing-synopsis {
+  font-size: 12px;
+  color: #d1d5db;
+  margin: 10px 0;
+  line-height: 1.4;
+}
+
+.landing-btn-details {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.landing-btn-details:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.landing-carousel-arrow {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.landing-carousel-arrow:hover {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+  transform: scale(1.1);
+}
+
+.landing-carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 30px;
+}
+
+.landing-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.landing-indicator-active {
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  border-color: #ec4899;
+}
+
+.landing-carousel-loading {
+  text-align: center;
+  padding: 60px 0;
+  color: #a9a9bd;
+}
+
+/* ================================================================
+   CAROUSEL HERO CINEMATOGRÁFICO (Estilo Muvi)
+================================================================ */
+
+.landing-carousel-hero,
+.landing-auto-carousel-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  min-height: auto;
+  padding: 0;
+  height: 100%;
+}
+
+.landing-carousel-content {
+  display: none;
+  flex: 1;
+  max-width: 600px;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.landing-carousel-title {
+  margin: 0;
+  font-size: clamp(48px, 6vw, 72px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  color: white;
+}
+
+.landing-carousel-title span {
+  color: #ec4899;
+}
+
+.landing-carousel-description {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #c0c0c8;
+  max-width: 500px;
+}
+
+.landing-carousel-meta {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.landing-carousel-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #a9a9bd;
+  font-weight: 500;
+}
+
+.landing-carousel-stars {
+  color: #fbbf24;
+  font-size: 18px;
+}
+
+.landing-carousel-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.landing-carousel-btn-watch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(90deg, #ec4899, #8b5cf6);
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(236, 72, 153, 0.35);
+}
+
+.landing-carousel-btn-watch:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(236, 72, 153, 0.45);
+}
+
+.landing-carousel-btn-trailer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  background: transparent;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.landing-carousel-btn-trailer:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Pôster Lado Direito */
+.landing-carousel-poster-side {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  width: 100%;
+  height: 100%;
+}
+
+.landing-carousel-poster-wrapper {
+  position: relative;
+  width: 95%;
+  height: 95%;
+  max-width: 900px;
+  max-height: 100vh;
+  aspect-ratio: 9 / 13.5;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 50px 150px rgba(236, 72, 153, 0.4),
+              0 0 150px rgba(168, 85, 247, 0.3),
+              inset 0 0 50px rgba(236, 72, 153, 0.1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-carousel-poster-wrapper:hover {
+  box-shadow: 0 60px 180px rgba(236, 72, 153, 0.5),
+              0 0 180px rgba(168, 85, 247, 0.4),
+              inset 0 0 50px rgba(236, 72, 153, 0.15);
+  transform: translateY(-12px) scale(1.03);
+}
+
+.landing-carousel-poster-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Dots Indicadores */
+.landing-carousel-dots {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.landing-carousel-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.landing-carousel-dot:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.landing-carousel-dot-active {
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  border-color: #ec4899;
+  transform: scale(1.3);
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
+}
+
+/* ================================================================
+   RESPONSIVIDADE - CAROUSEL HERO
+================================================================ */
+
+@media (min-width: 769px) {
+  .landing-hero-wrapper::after {
+    display: block;
+  }
+}
+
+@media (max-width: 1024px) {
+  .landing-carousel-hero {
+    gap: 40px;
+    min-height: 500px;
+    padding: 60px 0;
+  }
+
+  .landing-carousel-title {
+    font-size: clamp(40px, 5vw, 56px);
+  }
+
+  .landing-carousel-poster-wrapper {
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-carousel-hero {
+    flex-direction: column;
+    gap: 40px;
+    min-height: auto;
+    padding: 60px 0;
+  }
+
+  .landing-carousel-content {
+    max-width: 100%;
+  }
+
+  .landing-carousel-title {
+    font-size: clamp(32px, 5vw, 48px);
+  }
+
+  .landing-carousel-poster-side {
+    max-width: 100%;
+  }
+
+  .landing-carousel-poster-wrapper {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-carousel-hero {
+    gap: 30px;
+    min-height: auto;
+    padding: 50px 0;
+  }
+
+  .landing-carousel-title {
+    font-size: clamp(28px, 5vw, 40px);
+  }
+
+  .landing-carousel-description {
+    font-size: 14px;
+  }
+
+  .landing-carousel-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .landing-carousel-btn-watch,
+  .landing-carousel-btn-trailer {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .landing-carousel-poster-wrapper {
+    max-width: 240px;
+  }
+
+  .landing-carousel-meta {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+
+
+
+/* ================================================================
+   RESPONSIVIDADE
+================================================================ */
+
+@media (max-width: 1024px) {
+  .landing-hero-wrapper {
+    gap: 0;
+    min-height: 600px;
+  }
+
+  .landing-hero-wrapper > .landing-hero {
+    padding: 60px 40px;
+  }
+
+  .landing-hero-wrapper > div:last-child {
+    min-width: auto;
+    padding: 60px 40px;
+  }
+
+  .landing-carousel-poster-wrapper {
+    max-width: 320px;
+    max-height: 480px;
+  }
+
+  .landing-benefits-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-header-container {
+    padding: 0 5%;
+  }
+
+  .landing-hero-wrapper {
+    flex-direction: column;
+    gap: 0;
+    min-height: auto;
+    border-right: none;
+  }
+
+  .landing-hero-wrapper > .landing-hero {
+    padding: 60px 20px;
+    text-align: center;
+  }
+
+  .landing-hero-wrapper > div:last-child {
+    min-width: 100%;
+    max-width: 100%;
+    padding: 40px 20px;
+  }
+
+  .landing-carousel-poster-wrapper {
+    max-width: 280px;
+    max-height: 420px;
+  }
+
+  .landing-hero-container {
+    gap: 50px;
+    padding: 0 5%;
+  }
+
+  .landing-hero-title {
+    font-size: clamp(40px, 6vw, 60px);
+  }
+
+  .landing-hero-visual {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+  }
+
+  .landing-carousel-container {
+    padding: 0 5%;
+  }
+
+  .landing-horizontal-container {
+    padding: 0 5%;
+  }
+
+  .landing-community-container {
+    padding: 0 5%;
+  }
+
+  .landing-footer-container {
+    padding: 0 5%;
+  }
+
+  .landing-carousel-wrapper {
+    gap: 10px;
+  }
+
+  .landing-carousel-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .landing-carousel-item-side {
+    display: none;
+  }
+
+  .landing-poster-wrapper-featured {
+    width: 180px;
+    height: 270px;
+  }
+
+  .landing-carousel-info {
+    padding: 15px;
+  }
+
+  .landing-carousel-info h3 {
+    font-size: 16px;
+  }
+
+  .landing-benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-community-header h2 {
+    font-size: 32px;
+  }
+
+  .landing-section-title {
+    font-size: 24px;
+  }
+
+  .landing-movies-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+  }
+
+  .landing-nav {
+    gap: 8px;
+  }
+
+  .landing-btn {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-hero-wrapper {
+    flex-direction: column;
+  }
+
+  .landing-carousel-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    right: auto;
+    z-index: 1;
+  }
+
+  .landing-hero {
+    width: 100%;
+    z-index: 3;
+    position: relative;
+  }
+
+  .landing-hero-container {
+    padding: 40px 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0;
+  }
+
+  .landing-hero-title {
+    color: white;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .landing-hero-title span {
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .landing-hero-description {
+    color: #e0e0e0;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .landing-badge {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+  }
+
+  .landing-btn-secondary {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: #ffffff;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-hero {
+    min-height: auto;
+    padding: 0;
+    width: 100%;
+  }
+
+  .landing-hero-wrapper {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .landing-carousel-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    right: auto;
+    z-index: 1;
+  }
+
+  .landing-hero {
+    width: 100%;
+    z-index: 3;
+    position: relative;
+  }
+
+  .landing-hero-container {
+    padding: 30px 20px;
+  }
+
+  .landing-hero-title {
+    font-size: clamp(24px, 5vw, 36px);
+    letter-spacing: -2px;
+  }
+
+  .landing-hero-description {
+    font-size: 13px;
+  }
+
+  .landing-hero-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .landing-btn-primary,
+  .landing-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .landing-auto-carousel-poster-container {
+    max-width: 240px;
+  }
+
+  .landing-auto-carousel-arrow-prev {
+    left: -30px;
+  }
+
+  .landing-auto-carousel-arrow-next {
+    right: -30px;
+  }
+
+  .landing-carousel-section {
+    padding: 60px 0;
+  }
+
+  .landing-carousel-title {
+    font-size: 24px;
+  }
+
+  .landing-carousel-items {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .landing-carousel-info {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    margin-top: 15px;
+    border-radius: 8px;
+  }
+
+  .landing-carousel-indicators {
+    gap: 6px;
+  }
+
+  .landing-indicator {
+    width: 8px;
+    height: 8px;
+  }
+
+  .landing-horizontal-section {
+    padding: 60px 0;
+  }
+
+  .landing-community-section {
+    padding: 60px 0;
+  }
+
+  .landing-community-header h2 {
+    font-size: 24px;
+  }
+
+  .landing-community-header p {
+    font-size: 14px;
+  }
+
+  .landing-benefit-card {
+    padding: 20px;
+  }
+
+  .landing-benefit-icon {
+    font-size: 32px;
+  }
+
+  .landing-benefit-card h3 {
+    font-size: 16px;
+  }
+
+  .landing-movies-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .landing-footer-content {
+    gap: 15px;
+  }
+
+  .landing-footer-bottom {
+    justify-content: center;
+    text-align: center;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-btn,
+  .landing-btn-primary,
+  .landing-btn-secondary,
+  .landing-carousel-item,
+  .landing-movie-card,
+  .landing-benefit-card {
+    transition: none;
+  }
+}
