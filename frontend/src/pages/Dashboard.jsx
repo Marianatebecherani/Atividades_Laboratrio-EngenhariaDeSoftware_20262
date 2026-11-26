@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import Sidebar from "../components/Sidebar";
 
@@ -8,6 +8,7 @@ import MinhaLista from "./MinhaLista";
 
 function Dashboard({ token, usuario, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(true);
+  const menuButtonRef = useRef(null);
   const [activePage, setActivePage] = useState("inicio");
   const [termoHome, setTermoHome] = useState("");
   const [termoInicialBusca, setTermoInicialBusca] = useState("");
@@ -34,6 +35,10 @@ function Dashboard({ token, usuario, onLogout }) {
         menuOpen={menuOpen}
         activePage={activePage}
         setActivePage={navegar}
+        onClose={() => {
+          setMenuOpen(false);
+          menuButtonRef.current?.focus();
+        }}
         onLogout={onLogout}
       />
 
@@ -48,7 +53,11 @@ function Dashboard({ token, usuario, onLogout }) {
         <header className="dashboard-header">
 
           <button
+            ref={menuButtonRef}
+            type="button"
             className="menu-button"
+            aria-label={menuOpen ? "Recolher menu lateral" : "Expandir menu lateral"}
+            aria-expanded={menuOpen}
             onClick={() =>
               setMenuOpen(!menuOpen)
             }
