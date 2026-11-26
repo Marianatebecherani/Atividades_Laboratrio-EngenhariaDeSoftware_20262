@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { useRecomendacoes } from "../hooks/useRecomendacoes";
 import FilmeDetalhe from "./FilmeDetalhe";
@@ -34,6 +34,9 @@ function nota(valor) {
 function Recomendacoes({ token, usuario }) {
   const [estrategia, setEstrategia] = useState("perfil");
   const [detalhe, setDetalhe] = useState(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const resultadosRef = useRef(null);
+  const quantidadeFilmesAnteriorRef = useRef(0);
   const { filmes, estrategiaUsada, tempoMs, carregando, erro, tentarNovamente } =
     useRecomendacoes(token, estrategia);
 
@@ -41,40 +44,122 @@ function Recomendacoes({ token, usuario }) {
   const usouReserva =
     !carregando && !erro && estrategiaUsada !== null && estrategiaUsada !== estrategia;
 
+  useLayoutEffect(() => {
+    const faixa = resultadosRef.current;
+    if (!filmes.length) {
+      quantidadeFilmesAnteriorRef.current = 0;
+      return;
+    }
+    if (!faixa) return;
+
+    const quantidadeAnterior = quantidadeFilmesAnteriorRef.current;
+    const deslocamentoInicial = Math.min(2, Math.floor((filmes.length - 1) / 2));
+    const indiceRelativo = quantidadeAnterior
+      ? Math.max(0, activeCardIndex - quantidadeAnterior)
+      : deslocamentoInicial;
+    const indiceInicial = filmes.length + Math.min(indiceRelativo, filmes.length - 1);
+    const cardInicial = faixa.children[indiceInicial];
+    if (!cardInicial) return;
+
+    quantidadeFilmesAnteriorRef.current = filmes.length;
+    setActiveCardIndex(indiceInicial);
+    const centroFaixa = faixa.getBoundingClientRect().left + faixa.clientWidth / 2;
+    const retanguloCard = cardInicial.getBoundingClientRect();
+    faixa.scrollLeft += retanguloCard.left + retanguloCard.width / 2 - centroFaixa;
+  }, [activeCardIndex, detalhe, filmes.length]);
+
+  const atualizarCardAtivo = (event) => {
+    const faixa = event.currentTarget;
+    const centroFaixa = faixa.getBoundingClientRect().left + faixa.clientWidth / 2;
+    let indiceMaisProximo = 0;
+    let menorDistancia = Number.POSITIVE_INFINITY;
+
+    Array.from(faixa.children).forEach((card, index) => {
+      const retangulo = card.getBoundingClientRect();
+      const centroCard = retangulo.left + retangulo.width / 2;
+      const distancia = Math.abs(centroFaixa - centroCard);
+
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        indiceMaisProximo = index;
+      }
+    });
+
+    let indiceNormalizado = indiceMaisProximo;
+    if (indiceMaisProximo < filmes.length) {
+      indiceNormalizado += filmes.length;
+    } else if (indiceMaisProximo >= filmes.length * 2) {
+      indiceNormalizado -= filmes.length;
+    }
+
+    if (indiceNormalizado !== indiceMaisProximo) {
+      const cardAtivo = faixa.children[indiceMaisProximo];
+      const cardEquivalente = faixa.children[indiceNormalizado];
+      const centroAtivo = cardAtivo.getBoundingClientRect().left + cardAtivo.getBoundingClientRect().width / 2;
+      const centroEquivalente =
+        cardEquivalente.getBoundingClientRect().left + cardEquivalente.getBoundingClientRect().width / 2;
+      faixa.scrollLeft += centroEquivalente - centroAtivo;
+    }
+
+    setActiveCardIndex((atual) => atual === indiceNormalizado ? atual : indiceNormalizado);
+  };
+
+  const moverRecomendacoes = (direcao) => {
+    const faixa = resultadosRef.current;
+    const primeiroCard = faixa?.firstElementChild;
+    if (!faixa || !primeiroCard) return;
+
+    const proximoCard = primeiroCard.nextElementSibling;
+    const intervalo = proximoCard
+      ? proximoCard.offsetLeft - primeiroCard.offsetLeft
+      : primeiroCard.offsetWidth;
+
+    faixa.scrollBy({ left: direcao * intervalo, behavior: "smooth" });
+  };
+
+  const selecionarEstrategia = (event) => {
+    setEstrategia(event.target.value);
+    setActiveCardIndex(0);
+    resultadosRef.current?.scrollTo({ left: 0 });
+  };
+  const filmesDoCarrossel = [...filmes, ...filmes, ...filmes];
+
   return (
-    <section className="tmdb-search" aria-labelledby="titulo-recomendacoes">
-      <div className="tmdb-search-heading">
-        <div>
-          <span className="eyebrow">Sua experiência personalizada</span>
-          <h2 id="titulo-recomendacoes">Recomendados para você</h2>
-          <p>{escolhida.descricao}</p>
+    <section className="tmdb-search home-recommendations" aria-labelledby="titulo-recomendacoes">
+      <div className="home-recommendation-toolbar">
+        <div className="tmdb-search-heading">
+          <div>
+            <span className="eyebrow">Sua experiência personalizada</span>
+            <h2 id="titulo-recomendacoes">Recomendados para você</h2>
+            <p>{escolhida.descricao}</p>
+          </div>
+
+          {detalhe && (
+            <button
+              className="tmdb-back-button"
+              type="button"
+              onClick={() => setDetalhe(null)}
+            >
+              Voltar às recomendações
+            </button>
+          )}
         </div>
 
-        {detalhe && (
-          <button
-            className="tmdb-back-button"
-            type="button"
-            onClick={() => setDetalhe(null)}
-          >
-            Voltar às recomendações
-          </button>
+        {!detalhe && (
+          <div className="tmdb-controls tmdb-recomendacao-controles">
+            <label className="tmdb-mode-control">
+              Recomendar por
+              <select value={estrategia} onChange={selecionarEstrategia}>
+                {ESTRATEGIAS.map((item) => (
+                  <option key={item.valor} value={item.valor}>
+                    {item.rotulo}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         )}
       </div>
-
-      {!detalhe && (
-        <div className="tmdb-controls tmdb-recomendacao-controles">
-          <label className="tmdb-mode-control">
-            Recomendar por
-            <select value={estrategia} onChange={(event) => setEstrategia(event.target.value)}>
-              {ESTRATEGIAS.map((item) => (
-                <option key={item.valor} value={item.valor}>
-                  {item.rotulo}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
 
       {carregando && (
         <p aria-live="polite">Buscando recomendações para você...</p>
@@ -113,12 +198,36 @@ function Recomendacoes({ token, usuario }) {
 
       {!detalhe && filmes.length > 0 && (
         <div className="tmdb-carousel">
-          <div className="tmdb-results tmdb-results-compact">
-            {filmes.map((filme) => (
+          {filmes.length > 1 && (
+            <button
+              className="carousel-button carousel-button-previous"
+              type="button"
+              aria-label="Rolar recomendações para a esquerda"
+              title="Anterior"
+              onClick={() => moverRecomendacoes(-1)}
+            >
+              ‹
+            </button>
+          )}
+          <div
+            className="tmdb-results tmdb-results-compact"
+            onScroll={atualizarCardAtivo}
+            ref={resultadosRef}
+          >
+            {filmesDoCarrossel.map((filme, index) => (
               <button
                 className="tmdb-result"
-                key={filme.tmdb_id}
+                data-carousel-position={
+                  index === activeCardIndex
+                    ? "active"
+                    : Math.abs(index - activeCardIndex) === 1
+                      ? "near"
+                      : "far"
+                }
+                key={`${filme.tmdb_id}-${index}`}
                 type="button"
+                aria-hidden={Math.floor(index / filmes.length) !== 1}
+                tabIndex={Math.floor(index / filmes.length) !== 1 ? -1 : undefined}
                 onClick={() => setDetalhe(filme.tmdb_id)}
                 aria-label={`Ver ${filme.titulo}, ${nota(filme.nota_tmdb)}. ${filme.motivo}`}
                 title={filme.motivo}
@@ -145,6 +254,17 @@ function Recomendacoes({ token, usuario }) {
               </button>
             ))}
           </div>
+          {filmes.length > 1 && (
+            <button
+              className="carousel-button carousel-button-next"
+              type="button"
+              aria-label="Rolar recomendações para a direita"
+              title="Próximo"
+              onClick={() => moverRecomendacoes(1)}
+            >
+              ›
+            </button>
+          )}
         </div>
       )}
 

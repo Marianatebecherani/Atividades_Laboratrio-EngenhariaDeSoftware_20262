@@ -1,5 +1,6 @@
 import TmdbSearch from "../components/TmdbSearch";
 import Recomendacoes from "../components/Recomendacoes";
+import "./Inicio.css";
 
 function Inicio({ token, usuario }) {
   return (

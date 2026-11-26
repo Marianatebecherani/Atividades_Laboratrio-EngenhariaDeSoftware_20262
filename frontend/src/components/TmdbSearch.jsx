@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import {
   buscarFilmesTmdb,
@@ -34,6 +34,7 @@ function nota(valor) {
 function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" }) {
   const tituloId = useId();
   const resultadosRef = useRef(null);
+  const quantidadeResultadosAnteriorRef = useRef(0);
   const paginaRef = useRef(1);
   const totalPaginasRef = useRef(0);
   const carregandoRef = useRef(false);
@@ -53,6 +54,7 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
   const [idioma, setIdioma] = useState("pt-BR");
   const [ordenacao, setOrdenacao] = useState("popularity.desc");
   const [detalhe, setDetalhe] = useState(null);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -90,14 +92,46 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
     };
   }, [compacto, categoria]);
 
+  useLayoutEffect(() => {
+    const faixa = resultadosRef.current;
+    if (!compacto || !resultados.length) {
+      if (compacto) quantidadeResultadosAnteriorRef.current = 0;
+      return;
+    }
+    if (!faixa) return;
+
+    const quantidadeAnterior = quantidadeResultadosAnteriorRef.current;
+    const deslocamentoInicial = Math.min(2, Math.floor((resultados.length - 1) / 2));
+    const indiceRelativo = quantidadeAnterior
+      ? Math.max(0, activeCardIndex - quantidadeAnterior)
+      : deslocamentoInicial;
+    const indiceInicial = resultados.length + Math.min(indiceRelativo, resultados.length - 1);
+    const cardInicial = faixa.children[indiceInicial];
+    if (!cardInicial) return;
+
+    quantidadeResultadosAnteriorRef.current = resultados.length;
+    setActiveCardIndex(indiceInicial);
+    const centroFaixa = faixa.getBoundingClientRect().left + faixa.clientWidth / 2;
+    const retanguloCard = cardInicial.getBoundingClientRect();
+    faixa.scrollLeft += retanguloCard.left + retanguloCard.width / 2 - centroFaixa;
+  }, [activeCardIndex, compacto, detalhe, resultados.length]);
+
   useEffect(() => {
     if (!rolarDepoisDeCarregarRef.current) return;
     rolarDepoisDeCarregarRef.current = false;
     requestAnimationFrame(() => {
       const faixa = resultadosRef.current;
-      faixa?.scrollBy({ left: faixa.clientWidth, behavior: "smooth" });
+      if (!faixa) return;
+
+      const primeiroCard = faixa.firstElementChild;
+      const proximoCard = primeiroCard?.nextElementSibling;
+      const intervalo = primeiroCard && proximoCard
+        ? proximoCard.offsetLeft - primeiroCard.offsetLeft
+        : faixa.clientWidth;
+
+      faixa.scrollBy({ left: compacto ? intervalo : faixa.clientWidth, behavior: "smooth" });
     });
-  }, [resultados]);
+  }, [compacto, resultados]);
 
   const carregarResultados = async (novoModo, numeroPagina = 1, anexar = false) => {
     const termo = numeroPagina === 1 ? query.trim() : termoPesquisado;
@@ -144,7 +178,14 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
     const faixa = resultadosRef.current;
     if (!faixa) return;
 
-    const chegouAoFinal = faixa.scrollLeft + faixa.clientWidth >= faixa.scrollWidth - 8;
+    const primeiroCard = faixa.firstElementChild;
+    const proximoCard = primeiroCard?.nextElementSibling;
+    const intervalo = primeiroCard && proximoCard
+      ? proximoCard.offsetLeft - primeiroCard.offsetLeft
+      : faixa.clientWidth;
+    const chegouAoFinal = compacto
+      ? activeCardIndex >= (resultados.length * 2) - 1
+      : faixa.scrollLeft + faixa.clientWidth >= faixa.scrollWidth - 8;
     if (
       direcao > 0
       && chegouAoFinal
@@ -156,7 +197,56 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
       return;
     }
 
-    faixa.scrollBy({ left: direcao * faixa.clientWidth, behavior: "smooth" });
+    faixa.scrollBy({
+      left: direcao * (compacto ? intervalo : faixa.clientWidth),
+      behavior: "smooth",
+    });
+  };
+
+  const atualizarCardAtivo = (event) => {
+    const faixa = event.currentTarget;
+    const centroFaixa = faixa.getBoundingClientRect().left + faixa.clientWidth / 2;
+    let indiceMaisProximo = 0;
+    let menorDistancia = Number.POSITIVE_INFINITY;
+
+    Array.from(faixa.children).forEach((card, index) => {
+      const retangulo = card.getBoundingClientRect();
+      const centroCard = retangulo.left + retangulo.width / 2;
+      const distancia = Math.abs(centroFaixa - centroCard);
+
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        indiceMaisProximo = index;
+      }
+    });
+
+    let indiceNormalizado = indiceMaisProximo;
+    if (compacto && resultados.length) {
+      if (indiceMaisProximo < resultados.length) {
+        indiceNormalizado += resultados.length;
+      } else if (indiceMaisProximo >= resultados.length * 2) {
+        indiceNormalizado -= resultados.length;
+      }
+
+      if (indiceNormalizado !== indiceMaisProximo) {
+        const cardAtivo = faixa.children[indiceMaisProximo];
+        const cardEquivalente = faixa.children[indiceNormalizado];
+        const centroAtivo = cardAtivo.getBoundingClientRect().left + cardAtivo.getBoundingClientRect().width / 2;
+        const centroEquivalente =
+          cardEquivalente.getBoundingClientRect().left + cardEquivalente.getBoundingClientRect().width / 2;
+        faixa.scrollLeft += centroEquivalente - centroAtivo;
+      }
+
+      if (
+        indiceNormalizado === resultados.length * 2 - 1
+        && paginaRef.current < totalPaginasRef.current
+        && !carregandoRef.current
+      ) {
+        carregarResultados(modo, paginaRef.current + 1, true);
+      }
+    }
+
+    setActiveCardIndex((atual) => atual === indiceNormalizado ? atual : indiceNormalizado);
   };
 
   const selecionarModo = (novoModo) => {
@@ -189,6 +279,9 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
     setErro("");
     setDetalhe(tmdbId);
   };
+  const filmesDoCarrossel = compacto
+    ? [...resultados, ...resultados, ...resultados]
+    : resultados;
 
   return (
     <section className="tmdb-search" aria-labelledby={tituloId}>
@@ -373,13 +466,29 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
                 ‹
               </button>
             )}
-            <div className={`tmdb-results${compacto ? " tmdb-results-compact" : ""}`} aria-busy={carregando} ref={resultadosRef}>
-              {resultados.map((filme) => (
+            <div
+              className={`tmdb-results${compacto ? " tmdb-results-compact" : ""}`}
+              aria-busy={carregando}
+              onScroll={compacto ? atualizarCardAtivo : undefined}
+              ref={resultadosRef}
+            >
+              {filmesDoCarrossel.map((filme, index) => (
                 <button
                   className="tmdb-result"
-                  key={filme.tmdb_id}
+                  data-carousel-position={
+                    compacto
+                      ? index === activeCardIndex
+                        ? "active"
+                        : Math.abs(index - activeCardIndex) === 1
+                          ? "near"
+                          : "far"
+                      : undefined
+                  }
+                  key={`${filme.tmdb_id}-${index}`}
                   onClick={() => abrirDetalhe(filme.tmdb_id)}
                   type="button"
+                  aria-hidden={compacto && Math.floor(index / resultados.length) !== 1}
+                  tabIndex={compacto && Math.floor(index / resultados.length) !== 1 ? -1 : undefined}
                   aria-label={`Ver ${filme.titulo}, ${nota(filme.nota_tmdb)}`}
                 >
                   {filme.poster_url ? (

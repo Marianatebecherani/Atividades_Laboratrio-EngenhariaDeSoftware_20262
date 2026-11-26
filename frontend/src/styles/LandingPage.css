@@ -1161,7 +1161,111 @@ body {
     flex-direction: column;
   }
 }
+.landing-hero-wrapper {
+  position: relative;
+  overflow: hidden;
+  background: #090714;
+  isolation: isolate;
+}
 
+.landing-carousel-background {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 58%;
+  z-index: 0;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Mistura do pôster com o fundo da Hero */
+.landing-hero-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  background: linear-gradient(
+    90deg,
+    #090714 0%,
+    #090714 35%,
+    rgba(9, 7, 20, 0.95) 42%,
+    rgba(9, 7, 20, 0.75) 50%,
+    rgba(9, 7, 20, 0.4) 60%,
+    rgba(9, 7, 20, 0.1) 72%,
+    transparent 85%
+  );
+}.landing-hero-wrapper {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: #090714;
+}
+
+.landing-carousel-background {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 58%;
+  z-index: 0;
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Gradiente de integração */
+.landing-hero-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+
+  background: linear-gradient(
+    90deg,
+    #090714 0%,
+    #090714 32%,
+    rgba(9, 7, 20, 0.96) 42%,
+    rgba(9, 7, 20, 0.78) 50%,
+    rgba(9, 7, 20, 0.45) 62%,
+    rgba(9, 7, 20, 0.15) 76%,
+    transparent 88%
+  );
+}
+
+/* Blur localizado na transição */
+.landing-hero-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 38%;
+  width: 25%;
+
+  z-index: 2;
+  pointer-events: none;
+
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+
+  mask-image: linear-gradient(
+    to right,
+    black 0%,
+    rgba(0, 0, 0, 0.8) 30%,
+    rgba(0, 0, 0, 0.3) 65%,
+    transparent 100%
+  );
+
+  -webkit-mask-image: linear-gradient(
+    to right,
+    black 0%,
+    rgba(0, 0, 0, 0.8) 30%,
+    rgba(0, 0, 0, 0.3) 65%,
+    transparent 100%
+  );
+}
 @media (prefers-reduced-motion: reduce) {
   .landing-btn,
   .landing-btn-primary,

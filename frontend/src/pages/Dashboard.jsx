@@ -11,7 +11,7 @@ function Dashboard({ token, usuario, onLogout }) {
   const [activePage, setActivePage] = useState("inicio");
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard${activePage === "inicio" ? " dashboard-home" : ""}`}>
 
       <Sidebar
         menuOpen={menuOpen}
