@@ -6,7 +6,7 @@ import {
   listarFilmesTmdb,
   listarGenerosTmdb,
 } from "../api";
-import FilmeDetalhe from "./FilmeDetalhe";
+import FilmeDetalheModal from "./FilmeDetalheModal";
 
 const CATEGORIAS = [
   ["populares", "Populares"],
@@ -115,7 +115,7 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares",
     const centroFaixa = faixa.getBoundingClientRect().left + faixa.clientWidth / 2;
     const retanguloCard = cardInicial.getBoundingClientRect();
     faixa.scrollLeft += retanguloCard.left + retanguloCard.width / 2 - centroFaixa;
-  }, [activeCardIndex, compacto, detalhe, resultados.length]);
+  }, [activeCardIndex, compacto, resultados.length]);
 
   useEffect(() => {
     if (!rolarDepoisDeCarregarRef.current) return;
@@ -141,7 +141,7 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares",
     carregandoRef.current = true;
     setCarregando(true);
     setErro("");
-    setDetalhe(null);
+    if (!anexar) setDetalhe(null);
     try {
       let resposta;
       if (novoModo === "buscar") {
@@ -299,11 +299,6 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares",
             {compacto ? TITULOS_CATEGORIA[categoria] : "Filmes do TMDb"}
           </h2>
         </div>
-        {detalhe && (
-          <button className="tmdb-back-button" onClick={() => setDetalhe(null)}>
-            Voltar aos resultados
-          </button>
-        )}
       </div>
 
       {!compacto && (
@@ -457,9 +452,16 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares",
 
       {erro && <p className="tmdb-error" role="alert">{erro}</p>}
 
-      {detalhe && <FilmeDetalhe tmdbId={detalhe} token={token} usuario={usuario} />}
+      {detalhe && (
+        <FilmeDetalheModal
+          tmdbId={detalhe}
+          token={token}
+          usuario={usuario}
+          onClose={() => setDetalhe(null)}
+        />
+      )}
 
-      {!detalhe && resultados.length > 0 && (
+      {resultados.length > 0 && (
         <>
           <div className="tmdb-carousel">
             {resultados.length > 5 && (
@@ -526,7 +528,7 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares",
         </>
       )}
 
-      {!compacto && modo === "buscar" && !detalhe && !carregando && termoPesquisado && !erro && resultados.length === 0 && (
+      {!compacto && modo === "buscar" && !carregando && termoPesquisado && !erro && resultados.length === 0 && (
         <p>Nenhum filme encontrado para “{termoPesquisado}”.</p>
       )}
 

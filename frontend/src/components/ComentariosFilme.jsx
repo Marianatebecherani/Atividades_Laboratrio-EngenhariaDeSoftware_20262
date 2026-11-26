@@ -19,6 +19,7 @@ function ComentariosFilme({
   comentarioProprioId,
   aoAlterarComentarioProprio,
   atualizarSinal,
+  modal = false,
 }) {
   const [itens, setItens] = useState([]);
   const [total, setTotal] = useState(0);
@@ -100,7 +101,14 @@ function ComentariosFilme({
 
   return (
     <section className="comentarios-secao" aria-label="Comentários">
-      <h4>Comentários {total > 0 && `(${total})`}</h4>
+      {modal ? (
+        <div className="comentarios-titulo">
+          <h4>Comentários</h4>
+          <span>{total} {total === 1 ? "comentário" : "comentários"}</span>
+        </div>
+      ) : (
+        <h4>Comentários {total > 0 && `(${total})`}</h4>
+      )}
 
       {erro && <p className="tmdb-error" role="alert">{erro}</p>}
 
@@ -117,11 +125,20 @@ function ComentariosFilme({
           return (
             <li className="comentarios-item" key={comentario.id}>
               <div className="comentarios-cabecalho">
-                <strong>{comentario.usuario.nome}</strong>
+                {modal ? (
+                  <div className="comentarios-autor">
+                    <span className="comentarios-avatar" aria-hidden="true">
+                      {comentario.usuario.nome.trim().charAt(0).toUpperCase() || "U"}
+                    </span>
+                    <strong>{comentario.usuario.nome}</strong>
+                  </div>
+                ) : (
+                  <strong>{comentario.usuario.nome}</strong>
+                )}
                 {nota(comentario.nota) && (
                   <span className="comentarios-nota">{nota(comentario.nota)}</span>
                 )}
-                <span>{formatarDataHora(comentario.criado_em)}</span>
+                {!modal && <span>{formatarDataHora(comentario.criado_em)}</span>}
               </div>
 
               {emEdicao ? (
@@ -157,9 +174,17 @@ function ComentariosFilme({
                 <p>{comentario.conteudo}</p>
               )}
 
+              {modal && <p className="comentarios-data">{formatarDataHora(comentario.criado_em)}</p>}
+
               {souAutor && !emEdicao && (
                 <div className="comentarios-acoes">
                   <button type="button" onClick={() => iniciarEdicao(comentario)}>
+                    {modal && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M12 20H4v-4L16 4a2.1 2.1 0 0 1 3 3L7 19" />
+                        <path d="m14 6 4 4" />
+                      </svg>
+                    )}
                     Editar
                   </button>
                   <button
@@ -167,6 +192,11 @@ function ComentariosFilme({
                     onClick={() => excluirComentario(comentario.id)}
                     disabled={enviando}
                   >
+                    {modal && (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" />
+                      </svg>
+                    )}
                     Excluir
                   </button>
                 </div>

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { useRecomendacoes } from "../hooks/useRecomendacoes";
-import FilmeDetalhe from "./FilmeDetalhe";
+import FilmeDetalheModal from "./FilmeDetalheModal";
 
 const ESTRATEGIAS = [
   {
@@ -66,7 +66,7 @@ function Recomendacoes({ token, usuario }) {
     const centroFaixa = faixa.getBoundingClientRect().left + faixa.clientWidth / 2;
     const retanguloCard = cardInicial.getBoundingClientRect();
     faixa.scrollLeft += retanguloCard.left + retanguloCard.width / 2 - centroFaixa;
-  }, [activeCardIndex, detalhe, filmes.length]);
+  }, [activeCardIndex, filmes.length]);
 
   const atualizarCardAtivo = (event) => {
     const faixa = event.currentTarget;
@@ -133,32 +133,19 @@ function Recomendacoes({ token, usuario }) {
             <h2 id="titulo-recomendacoes">Recomendados para você</h2>
             <p>{escolhida.descricao}</p>
           </div>
-
-          {detalhe && (
-            <button
-              className="tmdb-back-button"
-              type="button"
-              onClick={() => setDetalhe(null)}
-            >
-              Voltar às recomendações
-            </button>
-          )}
         </div>
-
-        {!detalhe && (
-          <div className="tmdb-controls tmdb-recomendacao-controles">
-            <label className="tmdb-mode-control">
-              Recomendar por
-              <select value={estrategia} onChange={selecionarEstrategia}>
-                {ESTRATEGIAS.map((item) => (
-                  <option key={item.valor} value={item.valor}>
-                    {item.rotulo}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
+        <div className="tmdb-controls tmdb-recomendacao-controles">
+          <label className="tmdb-mode-control">
+            Recomendar por
+            <select value={estrategia} onChange={selecionarEstrategia}>
+              {ESTRATEGIAS.map((item) => (
+                <option key={item.valor} value={item.valor}>
+                  {item.rotulo}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
       {carregando && (
@@ -174,7 +161,7 @@ function Recomendacoes({ token, usuario }) {
         </div>
       )}
 
-      {usouReserva && !detalhe && (
+      {usouReserva && (
         <p className="tmdb-recomendacao-aviso" aria-live="polite">
           Ainda não há avaliações suficientes para essa opção, então mostramos os filmes em
           alta. Avalie alguns filmes para personalizar suas sugestões.
@@ -189,14 +176,15 @@ function Recomendacoes({ token, usuario }) {
       )}
 
       {detalhe && (
-        <FilmeDetalhe
+        <FilmeDetalheModal
           tmdbId={detalhe}
           token={token}
           usuario={usuario}
+          onClose={() => setDetalhe(null)}
         />
       )}
 
-      {!detalhe && filmes.length > 0 && (
+      {filmes.length > 0 && (
         <div className="tmdb-carousel">
           {filmes.length > 1 && (
             <button
@@ -268,7 +256,7 @@ function Recomendacoes({ token, usuario }) {
         </div>
       )}
 
-      {!detalhe && !carregando && !erro && filmes.length > 0 && tempoMs !== null && (
+      {!carregando && !erro && filmes.length > 0 && tempoMs !== null && (
         <p className="tmdb-recomendacao-tempo">Calculado em {tempoMs} ms</p>
       )}
 
