@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { listarFilmesUsuarioTmdb, obterFilmeTmdb } from "../api";
-import FilmeDetalhe from "./FilmeDetalhe";
+import FilmeDetalheModal from "./FilmeDetalheModal";
 
 const ROTULOS_STATUS = {
   quero_assistir: "Quero assistir",
@@ -147,24 +147,12 @@ function TmdbMinhaLista({ token, usuario }) {
         </nav>
       )}
       {detalheAberto && (
-        <div
-          className="tmdb-detalhe-modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onClick={fecharDetalhe}
-        >
-          <div className="tmdb-detalhe-modal" onClick={(event) => event.stopPropagation()}>
-            <button
-              type="button"
-              className="tmdb-detalhe-modal-fechar"
-              onClick={fecharDetalhe}
-              aria-label="Fechar detalhes do filme"
-            >
-              ✕
-            </button>
-            <FilmeDetalhe tmdbId={detalheAberto} token={token} usuario={usuario} />
-          </div>
-        </div>
+        <FilmeDetalheModal
+          tmdbId={detalheAberto}
+          token={token}
+          usuario={usuario}
+          onClose={fecharDetalhe}
+        />
       )}
     </section>
   );
