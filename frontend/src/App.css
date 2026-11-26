@@ -875,11 +875,13 @@ button {
   width: 75px;
 
   background:
-    rgba(13, 13, 31, 0.95);
+    rgba(11, 11, 28, 0.96);
 
   border-right:
     1px solid
-    rgba(255, 255, 255, 0.08);
+    rgba(255, 255, 255, 0.09);
+
+  box-shadow: 12px 0 38px rgba(0, 0, 0, 0.12);
 
   display: flex;
 
@@ -908,13 +910,15 @@ button {
 .sidebar-logo {
   height: 80px;
 
+  flex-shrink: 0;
+
   display: flex;
 
   align-items: center;
 
   justify-content: center;
 
-  gap: 10px;
+  gap: 12px;
 
   border-bottom:
     1px solid
@@ -929,6 +933,8 @@ button {
   color: #ec4899;
 
   font-size: 25px;
+
+  filter: drop-shadow(0 0 6px rgba(236, 72, 153, 0.25));
 }
 
 .sidebar-logo strong span {
@@ -947,40 +953,83 @@ button {
   color: transparent;
 }
 
+.sidebar-close {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .sidebar.open .sidebar-logo {
+    justify-content: space-between;
+    gap: 7px;
+    padding: 0 10px;
+  }
+
+  .sidebar-close {
+    display: grid;
+    flex: 0 0 36px;
+    height: 36px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #b4b1c2;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 180ms ease, background-color 180ms ease;
+  }
+
+  .sidebar-close:hover {
+    background: rgba(168, 85, 247, 0.12);
+    color: #fff;
+  }
+
+  .sidebar-close:focus-visible {
+    outline: 2px solid rgba(244, 114, 182, 0.9);
+    outline-offset: -3px;
+  }
+}
+
 
 /* =====================================================
    SIDEBAR NAV
 ===================================================== */
 
 .sidebar-nav {
-  padding: 25px 12px;
+  width: 100%;
+
+  padding: 22px 10px;
 
   display: flex;
 
   flex-direction: column;
 
-  gap: 8px;
+  gap: 7px;
 }
 
 .sidebar-nav button,
-.logout-button {
+.sidebar .logout-button {
+  position: relative;
+
+  min-width: 0;
+
   height: 48px;
 
   border: none;
 
-  border-radius: 10px;
+  border-radius: 11px;
 
   background: transparent;
 
-  color: #89899e;
+  color: #b4b1c2;
 
   display: flex;
 
   align-items: center;
 
-  gap: 15px;
+  gap: 14px;
 
-  padding: 0 15px;
+  padding: 0 14px;
 
   font-size: 14px;
 
@@ -988,17 +1037,17 @@ button {
 
   cursor: pointer;
 
-  transition: 0.2s;
+  transition: color 180ms ease, background-color 180ms ease;
 
   white-space: nowrap;
 }
 
 .sidebar-nav button:hover,
-.logout-button:hover {
+.sidebar .logout-button:hover {
   color: white;
 
   background:
-    rgba(168, 85, 247, 0.1);
+    rgba(168, 85, 247, 0.12);
 }
 
 .sidebar-nav button.active {
@@ -1007,31 +1056,70 @@ button {
   background:
     linear-gradient(
       90deg,
-      rgba(236, 72, 153, 0.2),
-      rgba(139, 92, 246, 0.15)
+      rgba(236, 72, 153, 0.17),
+      rgba(139, 92, 246, 0.1)
     );
 
-  border-left:
-    3px solid #ec4899;
+  border-left: 0;
+}
+
+.sidebar-nav button.active::before {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #ec4899;
+  content: "";
+}
+
+.sidebar-nav button:focus-visible,
+.sidebar .logout-button:focus-visible {
+  outline: 2px solid rgba(244, 114, 182, 0.9);
+  outline-offset: -3px;
 }
 
 .sidebar-nav button span:first-child,
-.logout-button span:first-child {
-  font-size: 20px;
-
-  min-width: 20px;
-
-  text-align: center;
+.sidebar .logout-button span:first-child {
+  display: grid;
+  flex: 0 0 24px;
+  place-items: center;
 }
 
-.logout-button {
+.sidebar-nav button svg,
+.sidebar .logout-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar .logout-button {
   margin-top: auto;
 
   margin-bottom: 25px;
 
-  margin-left: 12px;
+  margin-left: 10px;
 
-  margin-right: 12px;
+  margin-right: 10px;
+}
+
+.sidebar:not(.open) .sidebar-nav button,
+.sidebar:not(.open) .logout-button {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar:not(.open) .logout-button {
+  width: calc(100% - 20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar-nav button,
+  .sidebar .logout-button,
+  .sidebar-close {
+    transition: none;
+  }
 }
 
 
@@ -2633,6 +2721,25 @@ button {
     margin: 0 0 16px;
   }
 
+  .tmdb-category-tabs button {
+    padding: 8px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .tmdb-category-tabs button[aria-pressed="true"] {
+    border-color: transparent;
+    background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+  }
+
+  .tmdb-category-tabs button:focus-visible {
+    outline: 2px solid rgba(236, 72, 153, 0.6);
+    outline-offset: 2px;
+  }
+
   .tmdb-discover-filters {
     display: grid;
     flex: 1;
@@ -2949,6 +3056,27 @@ button {
     background: rgba(0, 0, 0, 0.75);
     color: #fff;
     font-size: 10px;
+  }
+
+  .tmdb-result-info .tmdb-result-motivo {
+    color: #f9a8d4;
+    font-weight: 600;
+  }
+
+  .tmdb-recomendacao-controles {
+    margin-bottom: 16px;
+  }
+
+  .tmdb-recomendacao-aviso {
+    margin: 0 0 12px;
+    color: #c4c4ce;
+    font-size: 13px;
+  }
+
+  .tmdb-recomendacao-tempo {
+    margin: 10px 0 0;
+    color: #9696a5;
+    font-size: 12px;
   }
 
   .tmdb-detail {

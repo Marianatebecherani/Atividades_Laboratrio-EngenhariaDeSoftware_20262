@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models.enums import StatusLista
+from app.models.enums import NomeEstrategia, StatusLista
 
 
 class GeneroTmdbResposta(BaseModel):
@@ -41,6 +41,7 @@ class FilmeTmdbResposta(BaseModel):
     quantidade_votos: int = 0
     popularidade: float | None = None
     genero_ids: list[int] = Field(default_factory=list)
+    paises_producao: list[str] = Field(default_factory=list)
     poster_url: str | None = None
     backdrop_url: str | None = None
     elenco: list[PessoaElencoTmdbResposta] = Field(default_factory=list)
@@ -80,6 +81,10 @@ class DescobrirFilmesParametros(BaseModel):
     min_rating: float | None = Field(default=None, ge=0, le=10)
     max_rating: float | None = Field(default=None, ge=0, le=10)
     language: str = Field(default="pt-BR", pattern=r"^[a-z]{2}-[A-Z]{2}$")
+    origin_country: str | None = Field(
+        default=None,
+        pattern=r"^[A-Z]{2}$",
+    )
     sort_by: OrdenacaoDiscoverTmdb = "popularity.desc"
 
     # Previous version's public names remain accepted for compatibility.
@@ -181,3 +186,18 @@ class PaginaEstadoFilmesTmdbResposta(BaseModel):
     total: int = Field(ge=0)
     pagina: int = Field(ge=1)
     tamanho: int = Field(ge=1)
+
+
+class FilmeRecomendadoResposta(FilmeTmdbResposta):
+    motivo: str = Field(description="Por que o filme foi recomendado ao usuário")
+
+
+class RecomendacoesTmdbResposta(BaseModel):
+    """Filmes recomendados ao usuário e a estratégia que os gerou."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    estrategia: NomeEstrategia
+    itens: list[FilmeRecomendadoResposta] = Field(default_factory=list)
+    total: int = Field(ge=0)
+    tempo_ms: int = Field(ge=0, description="Tempo de cálculo das recomendações, em milissegundos")

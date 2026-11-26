@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from app.api.filmes import obter_tmdb_service
+from app.api.dependencias import obter_tmdb_service
 from app.main import app
 from app.services.tmdb_service import TmdbService
 

@@ -52,13 +52,46 @@ Aplicação para registrar filmes e séries assistidos, manter uma lista "Quero 
 | Banco de dados | PostgreSQL |
 | Frontend | React (Vite) |
 
-<p align="center">
-  <img
-    src="./docs/Arquitetura%20star%20film.png"
-    alt="Arquitetura do projeto Star Film"
-    width="900"
-  />
-</p>
+### Desenho da arquitetura
+
+<!-- Mesmo diagrama de docs/arquitetura.md: mantenha os dois iguais. -->
+
+```mermaid
+flowchart TB
+    usuario(["Usuário<br/>(navegador)"])
+
+    subgraph front["Frontend: React + Vite (frontend/)"]
+        paginas["Páginas<br/>Início, Busca e Minha Lista"]
+        componentes["Componentes e hooks<br/>(ex.: Recomendacoes, useRecomendacoes)"]
+        cliente_api["Cliente da API<br/>src/api.js"]
+        paginas --> componentes --> cliente_api
+    end
+
+    subgraph back["Backend: FastAPI (backend/)"]
+        rotas["Rotas REST /api/v1<br/>Swagger em /docs e autenticação JWT"]
+        servicos["Serviços<br/>regras de negócio"]
+        estrategias["Recomendações (Strategy)<br/>perfil, similares e populares"]
+        repositorios["Repositories<br/>SQLAlchemy 2"]
+        tmdb_service["Cliente do TMDb<br/>conexão compartilhada e cache"]
+        rotas --> servicos
+        rotas --> tmdb_service
+        servicos --> repositorios
+        servicos --> estrategias
+        estrategias --> tmdb_service
+    end
+
+    banco[("PostgreSQL 17 (Docker)<br/>usuários, lista, avaliações,<br/>comentários e favoritos")]
+    tmdb["TMDb API<br/>filmes, gêneros e recomendações"]
+    imagens["Imagens do TMDb<br/>image.tmdb.org"]
+
+    usuario --> paginas
+    cliente_api -- "HTTP/JSON<br/>(proxy do Vite em /api)" --> rotas
+    repositorios -- "SQL (psycopg 3)<br/>esquema via Alembic" --> banco
+    tmdb_service -- "HTTPS" --> tmdb
+    usuario -. "pôsteres" .-> imagens
+```
+
+Camadas do backend, fluxo de uma recomendação e portas usadas em desenvolvimento: [docs/arquitetura.md](docs/arquitetura.md).
 
 ## Requisitos
 
@@ -83,6 +116,16 @@ Aplicação para registrar filmes e séries assistidos, manter uma lista "Quero 
 | [backend/](backend/README.md) | API REST, regras de negócio e acesso a dados. |
 | [frontend/](frontend/README.md) | Interface web em React. |
 
+## Padrões de projeto
+
+| Padrão | Onde | Uso |
+| --- | --- | --- |
+| Repository | [backend/app/repositories/](backend/app/repositories/) | Acesso aos dados de usuários, listas, avaliações, comentários e favoritos. |
+| Strategy | [backend/app/recomendacoes/](backend/app/recomendacoes/) | Motor de recomendações com as estratégias `perfil`, `similares` e `populares` ([detalhes](backend/README.md#recomendações-padrão-strategy)). |
+
+## Modelagem de dados
+
+O DER do banco está em [docs/der.md](docs/der.md), com as tabelas, chaves, restrições e índices. O PostgreSQL guarda as contas e o estado pessoal de cada usuário (lista, avaliações, comentários e favoritos). Os filmes vêm do TMDb e são referenciados pelo `tmdb_id`.
 
 
 ## Execução
