@@ -76,6 +76,66 @@
   color: #f9a8d4;
 }
 
+.dashboard-home .home-header-search {
+  display: flex;
+  align-items: center;
+  flex: 0 1 420px;
+  min-width: 0;
+  height: 44px;
+  margin: 0 24px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 10px;
+  background: #191727;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.dashboard-home .home-header-search:focus-within {
+  border-color: #c084fc;
+  box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.2);
+}
+
+.dashboard-home .home-header-search button {
+  display: grid;
+  flex: 0 0 44px;
+  height: 42px;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #c4c1d0;
+  cursor: pointer;
+}
+
+.dashboard-home .home-header-search button:focus-visible {
+  outline: 2px solid #f472b6;
+  outline-offset: -3px;
+}
+
+.dashboard-home .home-header-search svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.dashboard-home .home-header-search input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 12px 0 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+}
+
+.dashboard-home .home-header-search input::placeholder {
+  color: #b2afc0;
+  opacity: 1;
+}
+
 .dashboard.dashboard-home .dashboard-user {
   gap: 12px;
   color: #dedeea;
@@ -435,6 +495,27 @@
   .dashboard.dashboard-home .dashboard-header {
     height: 70px;
     padding: 0 18px;
+  }
+
+  .dashboard-home .home-header-search {
+    margin: 0 10px;
+  }
+
+  .dashboard.dashboard-home .dashboard-user {
+    flex-shrink: 0;
+    max-width: 90px;
+    gap: 6px;
+  }
+
+  .dashboard.dashboard-home .dashboard-user span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard.dashboard-home .menu-button,
+  .dashboard.dashboard-home .user-avatar {
+    flex-shrink: 0;
   }
 
   .dashboard-home .home-content {

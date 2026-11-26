@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 
 import {
   buscarFilmesTmdb,
@@ -31,7 +31,7 @@ function nota(valor) {
   return valor == null ? "Sem nota" : `⭐ ${valor.toFixed(1)}`;
 }
 
-function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" }) {
+function TmdbSearch({ token, usuario, compacto = false, categoria = "populares", termoInicial = "" }) {
   const tituloId = useId();
   const resultadosRef = useRef(null);
   const quantidadeResultadosAnteriorRef = useRef(0);
@@ -39,7 +39,8 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
   const totalPaginasRef = useRef(0);
   const carregandoRef = useRef(false);
   const rolarDepoisDeCarregarRef = useRef(false);
-  const [query, setQuery] = useState("");
+  const buscaInicialExecutadaRef = useRef(false);
+  const [query, setQuery] = useState(termoInicial);
   const [modo, setModo] = useState(compacto ? categoria : "buscar");
   const [termoPesquisado, setTermoPesquisado] = useState("");
   const [resultados, setResultados] = useState([]);
@@ -133,7 +134,7 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
     });
   }, [compacto, resultados]);
 
-  const carregarResultados = async (novoModo, numeroPagina = 1, anexar = false) => {
+  const carregarResultados = useCallback(async (novoModo, numeroPagina = 1, anexar = false) => {
     const termo = numeroPagina === 1 ? query.trim() : termoPesquisado;
     if (novoModo === "buscar" && !termo) return;
     if (anexar && carregandoRef.current) return;
@@ -172,7 +173,13 @@ function TmdbSearch({ token, usuario, compacto = false, categoria = "populares" 
       carregandoRef.current = false;
       setCarregando(false);
     }
-  };
+  }, [query, termoPesquisado, generoIds, operadorGeneros, ano, dataDe, dataAte, notaMinima, notaMaxima, idioma, ordenacao]);
+
+  useEffect(() => {
+    if (!termoInicial || buscaInicialExecutadaRef.current) return;
+    buscaInicialExecutadaRef.current = true;
+    carregarResultados("buscar");
+  }, [termoInicial, carregarResultados]);
 
   const moverResultados = (direcao) => {
     const faixa = resultadosRef.current;
